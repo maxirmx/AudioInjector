@@ -19,24 +19,52 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="DelayAPODll.idl">
+    <Midl Include="AudioInjectorAPODll.idl">
       <Filter>IDL Files</Filter>
     </Midl>
-    <Midl Include="DelayAPOInterface.idl">
+    <Midl Include="AudioInjectorAPOInterface.idl">
       <Filter>IDL Files</Filter>
     </Midl>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioInjectorAPO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="*.rc;*.ico;*.cur;*.bmp;*.dlg;*.rct;*.gif;*.jpg;*.jpeg;*.wav;*.jpe;*.tiff;*.tif;*.png;*.rc2">
+    <None Include="*.ico;*.cur;*.bmp;*.dlg;*.rct;*.gif;*.jpg;*.jpeg;*.wav;*.jpe;*.tiff;*.tif;*.png;*.rc2">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="*.cpp;*.def;*.bat;*.hpj;*.asmx">
+    <None Include="AudioInjectorAPODll.def">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AudioInjector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioInjectorAPODll.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioInjectorAPOMFX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioInjectorAPOSFX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AudioInjectorAPODll.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -26,6 +26,7 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <SampleGuid>{D5CCDCB1-348E-414E-BB0F-33C773760034}</SampleGuid>
+    <ProjectName>AudioInjectorAPO</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -78,16 +79,16 @@
   </ImportGroup>
   <ItemGroup Label="WrappedTaskItems" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>DelayAPO</TargetName>
+    <TargetName>AudioInjectorAPO</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <TargetName>DelayAPO</TargetName>
+    <TargetName>AudioInjectorAPO</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>DelayAPO</TargetName>
+    <TargetName>AudioInjectorAPO</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <TargetName>DelayAPO</TargetName>
+    <TargetName>AudioInjectorAPO</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
@@ -142,7 +143,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);Kernel32.lib;ole32.lib;oleaut32.lib;advapi32.lib;user32.lib;uuid.lib;AudioBaseProcessingObjectV140.lib;audiomediatypecrt.lib;AudioEng.lib</AdditionalDependencies>
-      <ModuleDefinitionFile>DelayAPODll.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>AudioInjectorAPODll.def</ModuleDefinitionFile>
       <AdditionalOptions>/ignore:4217,4049 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -168,7 +169,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);Kernel32.lib;ole32.lib;oleaut32.lib;advapi32.lib;user32.lib;uuid.lib;AudioBaseProcessingObjectV140.lib;audiomediatypecrt.lib;AudioEng.lib</AdditionalDependencies>
-      <ModuleDefinitionFile>DelayAPODll.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>AudioInjectorAPODll.def</ModuleDefinitionFile>
       <AdditionalOptions>/ignore:4217,4049 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -193,7 +194,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);Kernel32.lib;ole32.lib;oleaut32.lib;advapi32.lib;user32.lib;uuid.lib;AudioBaseProcessingObjectV140.lib;audiomediatypecrt.lib;AudioEng.lib</AdditionalDependencies>
-      <ModuleDefinitionFile>DelayAPODll.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>AudioInjectorAPODll.def</ModuleDefinitionFile>
       <AdditionalOptions>/ignore:4217,4049 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -219,18 +220,18 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);Kernel32.lib;ole32.lib;oleaut32.lib;advapi32.lib;user32.lib;uuid.lib;AudioBaseProcessingObjectV140.lib;audiomediatypecrt.lib;AudioEng.lib</AdditionalDependencies>
-      <ModuleDefinitionFile>DelayAPODll.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>AudioInjectorAPODll.def</ModuleDefinitionFile>
       <AdditionalOptions>/ignore:4217,4049 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Delay.cpp" />
-    <ClCompile Include="DelayAPODll.cpp" />
-    <ClCompile Include="DelayAPOMFX.cpp " />
-    <ClCompile Include="DelayAPOSFX.cpp" />
-    <Midl Include="DelayAPODll.idl" />
-    <Midl Include="DelayAPOInterface.idl" />
-    <ResourceCompile Include="DelayAPODll.rc" />
+    <ClCompile Include="AudioInjector.cpp" />
+    <ClCompile Include="AudioInjectorAPODll.cpp" />
+    <ClCompile Include="AudioInjectorAPOMFX.cpp" />
+    <ClCompile Include="AudioInjectorAPOSFX.cpp" />
+    <Midl Include="AudioInjectorAPODll.idl" />
+    <Midl Include="AudioInjectorAPOInterface.idl" />
+    <ResourceCompile Include="AudioInjectorAPODll.rc" />
   </ItemGroup>
   <ItemGroup>
     <Inf Exclude="@(Inf)" Include="*.inf" />
@@ -239,10 +240,10 @@
   <ItemGroup>
     <None Exclude="@(None)" Include="*.txt;*.htm;*.html" />
     <None Exclude="@(None)" Include="*.ico;*.cur;*.bmp;*.dlg;*.rct;*.gif;*.jpg;*.jpeg;*.wav;*.jpe;*.tiff;*.tif;*.png;*.rc2" />
-    <None Exclude="@(None)" Include="*.def;*.bat;*.hpj;*.asmx" />
+    <None Exclude="@(None)" Include="AudioInjectorAPODll.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Exclude="@(ClInclude)" Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd" />
+    <ClInclude Exclude="@(ClInclude)" Include="AudioInjectorAPO.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

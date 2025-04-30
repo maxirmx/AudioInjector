@@ -1,11 +1,11 @@
 //
-// DelayAPODll.cpp -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPODll.cpp -- Copyright (c) Microsoft Corporation. All rights reserved.
 //
 // Author:
 //
 // Description:
 //
-// DelayAPODll.cpp : Implementation of DLL Exports.
+// AudioInjectorAPODll.cpp : Implementation of DLL Exports.
 
 #include <atlbase.h>
 #include <atlcom.h>
@@ -14,10 +14,10 @@
 #include <mmreg.h>
 
 #include "resource.h"
-#include "DelayAPODll.h"
-#include <DelayAPO.h>
+#include "AudioInjectorAPODll.h"
+#include <AudioInjectorAPO.h>
 
-#include <DelayAPODll_i.c>
+#include <AudioInjectorAPODll_i.c>
 
 //-------------------------------------------------------------------------
 // Array of APO_REG_PROPERTIES structures implemented in this module.

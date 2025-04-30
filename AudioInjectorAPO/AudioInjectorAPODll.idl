@@ -9,13 +9,13 @@
 
 import "oaidl.idl";
 import "ocidl.idl";
-import "DelayAPOInterface.idl";
+import "AudioInjectorAPOInterface.idl";
 
 //-------------------------------------------------------------------------
 // DelayAPODlllib
 //
 [
-    uuid(2EC96EC6-EF8C-4BFF-8C73-D890264EFA93)
+    uuid(2EC96EC6-EF8C-4BFF-8C73-D890264EFA93),
     version(1.0)
 ]
 library DelayAPODlllib

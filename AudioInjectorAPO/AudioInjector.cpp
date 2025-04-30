@@ -17,7 +17,7 @@
 
 #include <float.h>
 
-#include "DelayAPO.h"
+#include "AudioInjectorAPO.h"
 
 #pragma AVRT_CODE_BEGIN
 void WriteSilence(

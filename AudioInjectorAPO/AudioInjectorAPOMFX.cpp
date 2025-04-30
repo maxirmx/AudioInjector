@@ -1,5 +1,5 @@
 //
-// DelayAPOMFX.cpp -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPOMFX.cpp -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Description:
 //
@@ -18,7 +18,7 @@
 #include <resource.h>
 
 #include <float.h>
-#include "DelayAPO.h"
+#include "AudioInjectorAPO.h"
 #include "SysVadShared.h"
 #include <CustomPropKeys.h>
 

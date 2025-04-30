@@ -1,5 +1,5 @@
 //
-// DelayAPO.h -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPO.h -- Copyright (c) Microsoft Corporation. All rights reserved.
 //
 // Description:
 //
@@ -10,8 +10,8 @@
 
 #include <audioenginebaseapo.h>
 #include <BaseAudioProcessingObject.h>
-#include <DelayAPOInterface.h>
-#include <DelayAPODll.h>
+#include <AudioInjectorAPOInterface.h>
+#include <AudioInjectorAPODll.h>
 
 #include <commonmacros.h>
 #include <devicetopology.h>
