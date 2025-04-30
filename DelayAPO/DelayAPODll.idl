@@ -1,0 +1,54 @@
+//
+// DelayAPODll.idl -- Copyright (c) Microsoft Corporation. All rights reserved.
+//
+// Author:
+//
+// Description:
+//
+// DelayAPODll.idl : Definition of COM interfaces and coclasses for the DLL.
+
+import "oaidl.idl";
+import "ocidl.idl";
+import "DelayAPOInterface.idl";
+
+//-------------------------------------------------------------------------
+// DelayAPODlllib
+//
+[
+    uuid(2EC96EC6-EF8C-4BFF-8C73-D890264EFA93)
+    version(1.0)
+]
+library DelayAPODlllib
+{
+    importlib("stdole2.tlb");
+
+    // for Delay APO - MFX
+    [
+        uuid(2EC9CC40-C59F-4E45-A7AD-17138B56B422)
+    ]
+    coclass DelayAPOMFX
+    {
+        interface IAudioProcessingObject;
+        interface IAudioProcessingObjectRT;
+        interface IAudioProcessingObjectConfiguration;
+        interface IMMNotificationClient;
+        interface IAudioSystemEffects;
+        [default] interface IDelayAPOMFX;
+    };
+
+    // for Delay APO - SFX
+    [
+        uuid(2EC95D17-DF3D-48D2-8433-AB0D9929AABF)
+    ]
+    coclass DelayAPOSFX
+    {
+        interface IAudioProcessingObject;
+        interface IAudioProcessingObjectRT;
+        interface IAudioProcessingObjectConfiguration;
+        interface IMMNotificationClient;
+        interface IAudioSystemEffects;
+        [default] interface IDelayAPOSFX;
+    };
+
+
+}
