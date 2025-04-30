@@ -1,9 +1,9 @@
 //
-// DelayAPOInterface.idl -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPOInterface.idl -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Description:
 //
-//      The interface and type definitions for Delay APO functionality.
+//      The interface and type definitions for AudioInjector APO functionality.
 //
 import "oaidl.idl";
 import "ocidl.idl";
@@ -14,7 +14,7 @@ import "audioenginebaseapo.idl";
     uuid(2EC9DB25-0234-4991-8533-B2EFC6C8D6C9),
     pointer_default(unique)
 ]
-interface IDelayAPOMFX : IUnknown
+interface IAudioInjectorAPOMFX : IUnknown
 {
 };
 
@@ -23,7 +23,7 @@ interface IDelayAPOMFX : IUnknown
     uuid(2EC9DE1E-955E-4FB9-BC6A-8CC8944AB9D2),
     pointer_default(unique)
 ]
-interface IDelayAPOSFX : IUnknown
+interface IAudioInjectorAPOSFX : IUnknown
 {
 };
 

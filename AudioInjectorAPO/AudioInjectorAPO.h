@@ -1,9 +1,9 @@
 //
-// AudioInjectorAPO.h -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPO.h -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Description:
 //
-//   Declaration of the CDelayAPO class.
+//   Declaration of the CAudioInjectorAPO class.
 //
 
 #pragma once
@@ -29,7 +29,7 @@ _Analysis_mode_(_Analysis_code_type_user_driver_)
 //
 
 // {DE5E2F27-3A3E-486D-B038-AC4401A774D7}
-DEFINE_GUID(InjectEffectId,     0xde5e2f27, 0x3a3e, 0x486d, 0xb0, 0x38, 0xac, 0x44, 0x1, 0xa7, 0x74, 0xd7);
+DEFINE_GUID(InjectEffectId,     0x2EC92F27, 0x3A3E, 0x486D, 0xB0, 0x38, 0xAC, 0x44, 0x01, 0xA7, 0x74, 0xD7);
 
 // 1000 ms of delay
 #define HNS_DELAY HNS_PER_SECOND
@@ -40,20 +40,20 @@ LONG GetCurrentEffectsSetting(IPropertyStore* properties, PROPERTYKEY pkeyEnable
 
 #pragma AVRT_VTABLES_BEGIN
 // Delay APO class - MFX
-class CDelayAPOMFX :
+class CAudioInjectorAPOMFX :
     public CComObjectRootEx<CComMultiThreadModel>,
-    public CComCoClass<CDelayAPOMFX, &CLSID_DelayAPOMFX>,
+    public CComCoClass<CAudioInjectorAPOMFX, &CLSID_AudioInjectorAPOMFX>,
     public CBaseAudioProcessingObject,
     public IMMNotificationClient,
     public IAudioSystemEffects2,
     // IAudioSystemEffectsCustomFormats may be optionally supported
     // by APOs that attach directly to the connector in the DEFAULT mode streaming graph
     public IAudioSystemEffectsCustomFormats, 
-    public IDelayAPOMFX
+    public IAudioInjectorAPOMFX
 {
 public:
     // constructor
-    CDelayAPOMFX()
+    CAudioInjectorAPOMFX()
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
@@ -64,12 +64,12 @@ public:
         m_pf32Coefficients = NULL;
     }
 
-    virtual ~CDelayAPOMFX();    // destructor
+    virtual ~CAudioInjectorAPOMFX();    // destructor
 
-DECLARE_REGISTRY_RESOURCEID(IDR_DELAYAPOMFX)
+DECLARE_REGISTRY_RESOURCEID(IDR_AUDIOINJECTORAPOMFX)
 
-BEGIN_COM_MAP(CDelayAPOMFX)
-    COM_INTERFACE_ENTRY(IDelayAPOMFX)
+BEGIN_COM_MAP(CAudioInjectorAPOMFX)
+    COM_INTERFACE_ENTRY(IAudioInjectorAPOMFX)
     COM_INTERFACE_ENTRY(IAudioSystemEffects)
     COM_INTERFACE_ENTRY(IAudioSystemEffects2)
     // IAudioSystemEffectsCustomFormats may be optionally supported
@@ -168,17 +168,17 @@ private:
 
 #pragma AVRT_VTABLES_BEGIN
 // Delay APO class - SFX
-class CDelayAPOSFX :
+class CAudioInjectorAPOSFX :
     public CComObjectRootEx<CComMultiThreadModel>,
-    public CComCoClass<CDelayAPOSFX, &CLSID_DelayAPOSFX>,
+    public CComCoClass<CAudioInjectorAPOSFX, &CLSID_AudioInjectorAPOSFX>,
     public CBaseAudioProcessingObject,
     public IMMNotificationClient,
     public IAudioSystemEffects2,
-    public IDelayAPOSFX
+    public IAudioInjectorAPOSFX
 {
 public:
     // constructor
-    CDelayAPOSFX()
+    CAudioInjectorAPOSFX()
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
@@ -188,12 +188,12 @@ public:
     {
     }
 
-    virtual ~CDelayAPOSFX();    // destructor
+    virtual ~CAudioInjectorAPOSFX();    // destructor
 
-DECLARE_REGISTRY_RESOURCEID(IDR_DELAYAPOSFX)
+DECLARE_REGISTRY_RESOURCEID(IDR_AUDIOINJECTORAPOSFX)
 
-BEGIN_COM_MAP(CDelayAPOSFX)
-    COM_INTERFACE_ENTRY(IDelayAPOSFX)
+BEGIN_COM_MAP(CAudioInjectorAPOSFX)
+    COM_INTERFACE_ENTRY(IAudioInjectorAPOSFX)
     COM_INTERFACE_ENTRY(IAudioSystemEffects)
     COM_INTERFACE_ENTRY(IAudioSystemEffects2)
     COM_INTERFACE_ENTRY(IMMNotificationClient)
@@ -262,8 +262,8 @@ public:
 };
 #pragma AVRT_VTABLES_END
 
-OBJECT_ENTRY_AUTO(__uuidof(DelayAPOMFX), CDelayAPOMFX)
-OBJECT_ENTRY_AUTO(__uuidof(DelayAPOSFX), CDelayAPOSFX)
+OBJECT_ENTRY_AUTO(__uuidof(AudioInjectorAPOMFX), CAudioInjectorAPOMFX)
+OBJECT_ENTRY_AUTO(__uuidof(AudioInjectorAPOSFX), CAudioInjectorAPOSFX)
 
 //
 //   Declaration of the ProcessDelay routine.

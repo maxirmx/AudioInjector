@@ -1,5 +1,5 @@
 //
-// AudioInjectorAPODll.cpp -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPODll.cpp -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Author:
 //
@@ -25,20 +25,20 @@
 //
 APO_REG_PROPERTIES const *gCoreAPOs[] =
 {
-    &CDelayAPOMFX::sm_RegProperties.m_Properties,
-    &CDelayAPOSFX::sm_RegProperties.m_Properties
+    &CAudioInjectorAPOMFX::sm_RegProperties.m_Properties,
+    &CAudioInjectorAPOSFX::sm_RegProperties.m_Properties
 };
 
 // {secret}
-class CDelayAPODllModule : public CAtlDllModuleT< CDelayAPODllModule >
+class CAudioInjectorAPODllModule : public CAtlDllModuleT< CAudioInjectorAPODllModule >
 {
 public :
-    DECLARE_LIBID(LIBID_DelayAPODlllib)
-    DECLARE_REGISTRY_APPID_RESOURCEID(IDR_DELAYAPODLL, "{0A21D954-674A-4C09-806E-DB4FBE8F199C}")
+    DECLARE_LIBID(LIBID_AudioInjectorAPODlllib)
+    DECLARE_REGISTRY_APPID_RESOURCEID(IDR_AUDIOINJECTORAPODLL, "{2EC9D954-674A-4C09-806E-DB4FBE8F199C}")
 };
 
 // {secret}
-CDelayAPODllModule _AtlModule;
+CAudioInjectorAPODllModule _AtlModule;
 
 
 // {secret}
@@ -68,3 +68,4 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID
 {
     return _AtlModule.DllGetClassObject(rclsid, riid, ppv);
 }
+

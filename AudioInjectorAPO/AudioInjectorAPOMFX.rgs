@@ -2,7 +2,7 @@ HKCR
 {
         NoRemove CLSID
         {
-                ForceRemove {b6c7032b-1f17-4cc6-bcdb-fd96deabc8a9} = s 'DelayAPOMFX Class'
+                ForceRemove {2EC9CC40-C59F-4E45-A7AD-17138B56B422} = s 'AudioInjectorAPOMFX Class'
                 {
                         InprocServer32 = s '%MODULE%'
                         {

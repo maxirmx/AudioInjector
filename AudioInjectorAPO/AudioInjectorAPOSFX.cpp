@@ -3,7 +3,7 @@
 //
 // Description:
 //
-//  Implementation of CDelayAPOSFX
+//  Implementation of CAudioInjectorAPOSFX
 //
 
 #include <atlbase.h>
@@ -28,13 +28,13 @@
 // number of IIDs supported by this APO.  If more than one, then additional
 // IIDs are added at the end
 #pragma warning (disable : 4815)
-const AVRT_DATA CRegAPOProperties<1> CDelayAPOSFX::sm_RegProperties(
-    __uuidof(DelayAPOSFX),                           // clsid of this APO
-    L"CDelayAPOSFX",                                 // friendly name of this APO
+const AVRT_DATA CRegAPOProperties<1> CAudioInjectorAPOSFX::sm_RegProperties(
+    __uuidof(AudioInjectorAPOSFX),                           // clsid of this APO
+    L"CAudioInjectorAPOSFX",                                 // friendly name of this APO
     L"Copyright (c) Microsoft Corporation",         // copyright info
     1,                                              // major version #
     0,                                              // minor version #
-    __uuidof(IDelayAPOSFX)                           // iid of primary interface
+    __uuidof(IAudioInjectorAPOSFX)                           // iid of primary interface
 
 //
 // If you need to change any of these attributes, uncomment everything up to
@@ -73,7 +73,7 @@ const AVRT_DATA CRegAPOProperties<1> CDelayAPOSFX::sm_RegProperties(
 //  object.  This routine can not fail and can not block, or call any other
 //  routine that blocks, or touch pagable memory.
 //
-STDMETHODIMP_(void) CDelayAPOSFX::APOProcess(
+STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
     UINT32 u32NumInputConnections,
     APO_CONNECTION_PROPERTY** ppInputConnections,
     UINT32 u32NumOutputConnections,
@@ -177,7 +177,7 @@ STDMETHODIMP_(void) CDelayAPOSFX::APOProcess(
 // Return values:
 //
 //      S_OK on success, a failure code on failure
-STDMETHODIMP CDelayAPOSFX::GetLatency(HNSTIME* pTime)  
+STDMETHODIMP CAudioInjectorAPOSFX::GetLatency(HNSTIME* pTime)  
 {  
     ASSERT_NONREALTIME();  
     HRESULT hr = S_OK;  
@@ -216,7 +216,7 @@ Exit:
 //      APOERR_INVALID_CONNECTION_FORMAT    Invalid connection format.
 //      APOERR_NUM_CONNECTIONS_INVALID      Number of input or output connections is not valid on
 //                                          this APO.
-STDMETHODIMP CDelayAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
+STDMETHODIMP CAudioInjectorAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
     APO_CONNECTION_DESCRIPTOR** ppInputConnections,  
     UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
@@ -317,7 +317,7 @@ Exit:
 //  Note: This method may not be called from a real-time processing thread.
 //
 
-HRESULT CDelayAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
+HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 {
     HRESULT                     hr = S_OK;
     CComPtr<IMMDevice>	        spMyDevice;
@@ -456,7 +456,7 @@ Exit:
 //  If there are no effects then the function still succeeds, ppEffectsIds
 //  returns a NULL pointer, and pcEffects returns a count of 0.
 //
-STDMETHODIMP CDelayAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
+STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
 {
     HRESULT hr;
     BOOL effectsLocked = FALSE;
@@ -566,7 +566,7 @@ Exit:
 // Remarks:
 //
 //
-HRESULT CDelayAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
 {
     HRESULT     hr = S_OK;
 
@@ -646,7 +646,7 @@ HRESULT CDelayAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPER
 //
 //      This method may not be called from a real-time processing thread.
 //
-CDelayAPOSFX::~CDelayAPOSFX(void)
+CAudioInjectorAPOSFX::~CAudioInjectorAPOSFX(void)
 {
     //
     // unregister for callbacks
@@ -660,4 +660,4 @@ CDelayAPOSFX::~CDelayAPOSFX(void)
     {
         CloseHandle(m_hEffectsChangedEvent);
     }
-} // ~CDelayAPOSFX
+} // ~CAudioInjectorAPOSFX

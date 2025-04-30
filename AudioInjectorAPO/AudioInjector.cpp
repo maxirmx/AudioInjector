@@ -1,5 +1,5 @@
 //
-// Delay.cpp -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjector.cpp -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Description:
 //

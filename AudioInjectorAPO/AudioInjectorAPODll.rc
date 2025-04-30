@@ -12,9 +12,9 @@ Copyright (c) Maxim Samsonov. All Rights Reserved
 #define VER_ORIGINALFILENAME_STR        "AudioInjectorAPO.Dll"
 #include <Common.ver>
 
-IDR_DELAYAPODLL          REGISTRY                "AudioInjectorAPODll.rgs"
-IDR_DELAYAPOMFX          REGISTRY                "AudioInjectorAPOMFX.rgs"
-IDR_DELAYAPOSFX          REGISTRY                "AudioInjectorAPOSFX.rgs"
+IDR_AUDIOINJECTORAPODLL          REGISTRY                "AudioInjectorAPODll.rgs"
+IDR_AUDIOINJECTORAPOMFX          REGISTRY                "AudioInjectorAPOMFX.rgs"
+IDR_AUDIOINJECTORAPOSFX          REGISTRY                "AudioInjectorAPOSFX.rgs"
 
 // ICON
 IDI_EFFECT_ICON			RCDATA		 "AudioInjectorAPO.png"

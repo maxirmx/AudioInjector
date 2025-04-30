@@ -1,24 +1,24 @@
 //
-// DelayAPODll.idl -- Copyright (c) Microsoft Corporation. All rights reserved.
+// AudioInjectorAPODll.idl -- Copyright (c) 2025 Maxim [maxirmx] Samsonov. All rights reserved.
 //
 // Author:
 //
 // Description:
 //
-// DelayAPODll.idl : Definition of COM interfaces and coclasses for the DLL.
+// AudioInjectorAPODll.idl : Definition of COM interfaces and coclasses for the DLL.
 
 import "oaidl.idl";
 import "ocidl.idl";
 import "AudioInjectorAPOInterface.idl";
 
 //-------------------------------------------------------------------------
-// DelayAPODlllib
+// AudioInjectorAPODlllib
 //
 [
     uuid(2EC96EC6-EF8C-4BFF-8C73-D890264EFA93),
     version(1.0)
 ]
-library DelayAPODlllib
+library AudioInjectorAPODlllib
 {
     importlib("stdole2.tlb");
 
@@ -26,28 +26,28 @@ library DelayAPODlllib
     [
         uuid(2EC9CC40-C59F-4E45-A7AD-17138B56B422)
     ]
-    coclass DelayAPOMFX
+    coclass AudioInjectorAPOMFX
     {
         interface IAudioProcessingObject;
         interface IAudioProcessingObjectRT;
         interface IAudioProcessingObjectConfiguration;
         interface IMMNotificationClient;
         interface IAudioSystemEffects;
-        [default] interface IDelayAPOMFX;
+        [default] interface IAudioInjectorAPOMFX;
     };
 
     // for Delay APO - SFX
     [
         uuid(2EC95D17-DF3D-48D2-8433-AB0D9929AABF)
     ]
-    coclass DelayAPOSFX
+    coclass AudioInjectorAPOSFX
     {
         interface IAudioProcessingObject;
         interface IAudioProcessingObjectRT;
         interface IAudioProcessingObjectConfiguration;
         interface IMMNotificationClient;
         interface IAudioSystemEffects;
-        [default] interface IDelayAPOSFX;
+        [default] interface IAudioInjectorAPOSFX;
     };
 
 

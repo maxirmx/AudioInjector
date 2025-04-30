@@ -3,9 +3,9 @@
 // Used by DelayAPODll.rc
 //
 #define IDS_PROJNAME                    100
-#define IDR_DELAYAPODLL                 101
-#define IDR_DELAYAPOMFX                 110
-#define IDR_DELAYAPOSFX                 111
+#define IDR_AUDIOINJECTORAPODLL                 101
+#define IDR_AUDIOINJECTORAPOMFX                 110
+#define IDR_AUDIOINJECTORAPOSFX                 111
 #define IDI_EFFECT_ICON                 200
 
 // Next default values for new objects

@@ -3,7 +3,7 @@
 //
 // Description:
 //
-//  Implementation of CDelayAPOMFX
+//  Implementation of CAudioInjectorAPOMFX
 //
 
 #include <atlbase.h>
@@ -29,13 +29,13 @@
 // number of IIDs supported by this APO.  If more than one, then additional
 // IIDs are added at the end
 #pragma warning (disable : 4815)
-const AVRT_DATA CRegAPOProperties<1> CDelayAPOMFX::sm_RegProperties(
-    __uuidof(DelayAPOMFX),                           // clsid of this APO
-    L"CDelayAPOMFX",                                 // friendly name of this APO
+const AVRT_DATA CRegAPOProperties<1> CAudioInjectorAPOMFX::sm_RegProperties(
+    __uuidof(AudioInjectorAPOMFX),                           // clsid of this APO
+    L"CAudioInjectorAPOMFX",                                 // friendly name of this APO
     L"Copyright (c) Microsoft Corporation",         // copyright info
     1,                                              // major version #
     0,                                              // minor version #
-    __uuidof(IDelayAPOMFX)                           // iid of primary interface
+    __uuidof(IAudioInjectorAPOMFX)                           // iid of primary interface
 //
 // If you need to change any of these attributes, uncomment everything up to
 // the point that you need to change something.  If you need to add IIDs, uncomment
@@ -124,7 +124,7 @@ LONG GetCurrentEffectsSetting(IPropertyStore* properties, PROPERTYKEY pkeyEnable
 //  object.  This routine can not fail and can not block, or call any other
 //  routine that blocks, or touch pagable memory.
 //
-STDMETHODIMP_(void) CDelayAPOMFX::APOProcess(
+STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
     UINT32 u32NumInputConnections,
     APO_CONNECTION_PROPERTY** ppInputConnections,
     UINT32 u32NumOutputConnections,
@@ -228,7 +228,7 @@ STDMETHODIMP_(void) CDelayAPOMFX::APOProcess(
 // Return values:
 //
 //      S_OK on success, a failure code on failure
-STDMETHODIMP CDelayAPOMFX::GetLatency(HNSTIME* pTime)  
+STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)  
 {  
     ASSERT_NONREALTIME();  
     HRESULT hr = S_OK;  
@@ -267,7 +267,7 @@ Exit:
 //      APOERR_INVALID_CONNECTION_FORMAT    Invalid connection format.
 //      APOERR_NUM_CONNECTIONS_INVALID      Number of input or output connections is not valid on
 //                                          this APO.
-STDMETHODIMP CDelayAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
+STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
     APO_CONNECTION_DESCRIPTOR** ppInputConnections,  
     UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
@@ -367,7 +367,7 @@ Exit:
 //  Note: This method may not be called from a real-time processing thread.
 //
 
-HRESULT CDelayAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
+HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 {
     HRESULT                     hr = S_OK;
     GUID                        processingMode;
@@ -496,7 +496,7 @@ Exit:
 //  If there are no effects then the function still succeeds, ppEffectsIds
 //  returns a NULL pointer, and pcEffects returns a count of 0.
 //
-STDMETHODIMP CDelayAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
+STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
 {
     HRESULT hr;
     BOOL effectsLocked = FALSE;
@@ -590,7 +590,7 @@ Exit:
     return hr;
 }
 
-HRESULT CDelayAPOMFX::ProprietaryCommunicationWithDriver(APOInitSystemEffects2 *_pAPOSysFxInit2)
+HRESULT CAudioInjectorAPOMFX::ProprietaryCommunicationWithDriver(APOInitSystemEffects2 *_pAPOSysFxInit2)
 {
     HRESULT hr = S_OK;    
     CComPtr<IMMDevice>	        spMyDevice;
@@ -687,7 +687,7 @@ Exit:
 //
 //      This method is called asynchronously.  No UI work should be done here.
 //
-HRESULT CDelayAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+HRESULT CAudioInjectorAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
 {
     HRESULT     hr = S_OK;
 
@@ -766,7 +766,7 @@ HRESULT CDelayAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPER
 //
 //      This method may not be called from a real-time processing thread.
 //
-CDelayAPOMFX::~CDelayAPOMFX(void)
+CAudioInjectorAPOMFX::~CAudioInjectorAPOMFX(void)
 {
     if (m_bIsInitialized)
     {
@@ -790,7 +790,7 @@ CDelayAPOMFX::~CDelayAPOMFX(void)
         AERT_Free(m_pf32Coefficients);
         m_pf32Coefficients = NULL;
     }
-} // ~CDelayAPOMFX
+} // ~CAudioInjectorAPOMFX
 
 
 //-------------------------------------------------------------------------
@@ -824,7 +824,7 @@ CDelayAPOMFX::~CDelayAPOMFX(void)
 //
 //  By default, this routine just ASSERTS and returns S_OK.
 //
-HRESULT CDelayAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputConnections,
+HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputConnections,
                 APO_CONNECTION_DESCRIPTOR** ppInputConnections,
                 UINT32 u32NumOutputConnections,
                 APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
@@ -929,7 +929,7 @@ CUSTOM_FORMAT_ITEM _rgCustomFormats[] =
 //
 // Remarks:
 //
-STDMETHODIMP CDelayAPOMFX::GetFormatCount
+STDMETHODIMP CAudioInjectorAPOMFX::GetFormatCount
 (
     UINT* pcFormats
 )
@@ -960,7 +960,7 @@ STDMETHODIMP CDelayAPOMFX::GetFormatCount
 //
 // Remarks:
 //
-STDMETHODIMP CDelayAPOMFX::GetFormat
+STDMETHODIMP CAudioInjectorAPOMFX::GetFormat
 (
     UINT              nFormat, 
     IAudioMediaType** ppFormat
@@ -1000,7 +1000,7 @@ Exit:
 //
 // Remarks:
 //
-STDMETHODIMP CDelayAPOMFX::GetFormatRepresentation
+STDMETHODIMP CAudioInjectorAPOMFX::GetFormatRepresentation
 (
     UINT                nFormat,
     _Outptr_ LPWSTR* ppwstrFormatRep
@@ -1052,7 +1052,7 @@ Exit:
 //
 // Remarks:
 //
-STDMETHODIMP CDelayAPOMFX::IsOutputFormatSupported
+STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
 (
     IAudioMediaType *pInputFormat, 
     IAudioMediaType *pRequestedOutputFormat, 
@@ -1115,7 +1115,7 @@ Exit:
     return hResult;
 }
 
-HRESULT CDelayAPOMFX::CheckCustomFormats(IAudioMediaType *pRequestedFormat)
+HRESULT CAudioInjectorAPOMFX::CheckCustomFormats(IAudioMediaType *pRequestedFormat)
 {
     HRESULT hResult = S_OK;
 
