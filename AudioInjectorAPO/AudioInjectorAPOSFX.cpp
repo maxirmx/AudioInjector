@@ -31,7 +31,7 @@
 const AVRT_DATA CRegAPOProperties<1> CAudioInjectorAPOSFX::sm_RegProperties(
     __uuidof(AudioInjectorAPOSFX),                           // clsid of this APO
     L"CAudioInjectorAPOSFX",                                 // friendly name of this APO
-    L"Copyright (c) Microsoft Corporation",         // copyright info
+    L"Copyright (c) 2025 Maxim [maxirmx] Samsonov",         // copyright info
     1,                                              // major version #
     0,                                              // minor version #
     __uuidof(IAudioInjectorAPOSFX)                           // iid of primary interface

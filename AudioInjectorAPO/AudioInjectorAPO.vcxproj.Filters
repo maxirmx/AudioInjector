@@ -33,10 +33,19 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd">
+    <ClInclude Include="AudioInjectorAPO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd">
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioInjectorAPO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="APOLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -46,6 +55,15 @@
     </None>
     <None Include="AudioInjectorAPODll.def">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="AudioInjectorAPODll.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="AudioInjectorAPOMFX.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="AudioInjectorAPOSFX.rgs">
+      <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

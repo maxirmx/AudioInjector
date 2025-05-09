@@ -1,4 +1,6 @@
 
 EXPORTS
+	DllRegisterServer   PRIVATE
+	DllUnregisterServer PRIVATE
 	DllCanUnloadNow     PRIVATE
 	DllGetClassObject   PRIVATE

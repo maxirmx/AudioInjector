@@ -22,6 +22,8 @@
 #include "SysVadShared.h"
 #include <CustomPropKeys.h>
 
+//{FD7F2B29 - 24D0 - 4B5C - B177 - 592C39F9CA10}
+
 
 
 // Static declaration of the APO_REG_PROPERTIES structure
@@ -32,7 +34,7 @@
 const AVRT_DATA CRegAPOProperties<1> CAudioInjectorAPOMFX::sm_RegProperties(
     __uuidof(AudioInjectorAPOMFX),                           // clsid of this APO
     L"CAudioInjectorAPOMFX",                                 // friendly name of this APO
-    L"Copyright (c) Microsoft Corporation",         // copyright info
+    L"2025 Maxim [maxirmx] Samsonov",         // copyright info
     1,                                              // major version #
     0,                                              // minor version #
     __uuidof(IAudioInjectorAPOMFX)                           // iid of primary interface
