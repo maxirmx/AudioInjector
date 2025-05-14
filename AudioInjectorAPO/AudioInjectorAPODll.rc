@@ -4,21 +4,69 @@ Copyright (c) 2025 Maxim [maxirmx] Samsonov. All Rights Reserved
 
 #include "resource.h"
 #include "winres.h"
-#include <ntverp.h>
+
+#define VER_PRODUCTNAME_STR L"AudioInject"
+#define VER_PRODUCTVERSION 00,01,00,001
+#define VER_FILEVERSION VER_PRODUCTVERSION
+#define VER_PRODUCTVERSION_STR "0.01.00"
+#define VER_FILEVERSION_STR VER_PRODUCTVERSION_STR
+#define VER_COMPANYNAME_STR "sw.consulting"
+
 #define VER_FILETYPE                    VFT_DLL
 #define VER_FILESUBTYPE                 VFT_UNKNOWN
 #define VER_FILEDESCRIPTION_STR         "Audio Injector APO"
 #define VER_INTERNALNAME_STR            "AudioInjectorAPO"
 #define VER_ORIGINALFILENAME_STR        "AudioInjectorAPO.Dll"
-#include <Common.ver>
+
+#define VER_LEGALCOPYRIGHT_YEARS    "2025"
+#define VER_LEGALCOPYRIGHT_STR_WITH_YEARS L"\251 2025 Maxim Samsonov. All rights reserved."
+#if defined(RC_INVOKED) && !defined(WIN16)
+#define VER_LEGALCOPYRIGHT_STR L"\251 Maxim Samsonov. All rights reserved."
+#else
+#define VER_LEGALCOPYRIGHT_STR "Copyright (c) Maxim Samsonov. All rights reserved."
+#endif
+
+#define VER_FILEFLAGSMASK           VS_FFI_FILEFLAGSMASK
+#define VER_FILEOS                  VOS_NT_WINDOWS32
+#define VER_FILEFLAGS               (VER_PRERELEASE|VER_DEBUG)
+#define VER_VERSION_UNICODE_LANG    "000004B0" /* LANG_NEUTRAL/SUBLANG_NEUTRAL, Unicode CP */
+
+#ifdef RC_INVOKED
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VER_FILEVERSION
+PRODUCTVERSION VER_PRODUCTVERSION
+FILEFLAGSMASK  VER_FILEFLAGSMASK
+FILEFLAGS      VER_FILEFLAGS
+FILEOS         VER_FILEOS
+FILETYPE       VER_FILETYPE
+FILESUBTYPE    VER_FILESUBTYPE
+BEGIN
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK VER_VERSION_UNICODE_LANG
+BEGIN
+VALUE "CompanyName", VER_COMPANYNAME_STR
+VALUE "FileDescription", VER_FILEDESCRIPTION_STR
+VALUE "FileVersion", VER_FILEVERSION_STR
+VALUE "InternalName", VER_INTERNALNAME_STR
+VALUE "LegalCopyright", VER_LEGALCOPYRIGHT_STR
+VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
+VALUE "ProductName", VER_PRODUCTNAME_STR
+VALUE "ProductVersion", VER_PRODUCTVERSION_STR
+#ifdef VER_OLESELFREGISTER
+VALUE "OleSelfRegister", "\0"
+#endif
+END
+END
+END
+#endif
 
 IDR_AUDIOINJECTORAPODLL          REGISTRY                "AudioInjectorAPODll.rgs"
 IDR_AUDIOINJECTORAPOMFX          REGISTRY                "AudioInjectorAPOMFX.rgs"
 IDR_AUDIOINJECTORAPOSFX          REGISTRY                "AudioInjectorAPOSFX.rgs"
 
-// ICON
-IDI_EFFECT_ICON			RCDATA		 "AudioInjectorAPO.png"
-
 #if 0
 1                       TYPELIB                 "AudioInjectorAPODll.tlb"
 #endif
+
+

@@ -22,6 +22,8 @@
 #include <devicetopology.h>
 #include <CustomPropKeys.h>
 
+#include "APOLogger.h"
+
 
 // Static declaration of the APO_REG_PROPERTIES structure
 // associated with this APO.  The number in <> brackets is the
@@ -81,6 +83,8 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
 {
     UNREFERENCED_PARAMETER(u32NumInputConnections);
     UNREFERENCED_PARAMETER(u32NumOutputConnections);
+
+ //   APO_LOG_TRACE_F("APOProcess");
 
     FLOAT32 *pf32InputFrames, *pf32OutputFrames;
 
