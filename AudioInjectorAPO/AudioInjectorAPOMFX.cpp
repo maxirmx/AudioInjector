@@ -21,6 +21,7 @@
 #include "AudioInjectorAPO.h"
 #include "SysVadShared.h"
 #include <CustomPropKeys.h>
+#include "AudioFileReader.h"
 
 //{FD7F2B29 - 24D0 - 4B5C - B177 - 592C39F9CA10}
 
@@ -84,7 +85,7 @@ LONG GetCurrentEffectsSetting(IPropertyStore* properties, PROPERTYKEY pkeyEnable
 
     PropVariantInit(&var);
 
-    // Get the state of whether channel swap MFX is enabled or not. 
+    // Get the state of whether channel swap MFX is enabled or not.
 
     // Check the master disable property defined by Windows
     hr = properties->GetValue(PKEY_AudioEndpoint_Disable_SysFx, &var);
@@ -158,11 +159,9 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
         {
             // get input pointer to connection buffer
             pf32InputFrames = reinterpret_cast<FLOAT32*>(ppInputConnections[0]->pBuffer);
-            ATLASSERT( IS_VALID_TYPED_READ_POINTER(pf32InputFrames) );
-
-            // get output pointer to connection buffer
+            ATLASSERT( IS_VALID_TYPED_READ_POINTER(pf32InputFrames) );            // get output pointer to connection buffer
             pf32OutputFrames = reinterpret_cast<FLOAT32*>(ppOutputConnections[0]->pBuffer);
-            ATLASSERT( IS_VALID_TYPED_READ_POINTER(pf32OutputFrames) );
+            ATLASSERT( IS_VALID_TYPED_WRITE_POINTER(pf32OutputFrames) );
 
             if (BUFFER_SILENT == ppInputConnections[0]->u32BufferFlags)
             {
@@ -171,18 +170,24 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
                               GetSamplesPerFrame() );
             }
 
-            // copy to the delay buffer
+            // Process with audio mixing if enabled
             if (
                 !IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) &&
-                m_fEnableDelayMFX
+                m_fEnableAudioMix &&
+                m_pAudioFileReader &&
+                m_pAudioFileReader->IsValid()
             )
             {
-                ProcessDelay(pf32OutputFrames, pf32InputFrames,
-                             ppInputConnections[0]->u32ValidFrameCount,
-                             GetSamplesPerFrame(),
-                             m_pf32DelayBuffer,
-                             m_nDelayFrames,
-                             &m_iDelayIndex);
+                // Mix the audio file with the input stream
+                ProcessAudioMix(
+                    pf32OutputFrames,
+                    pf32InputFrames,
+                    ppInputConnections[0]->u32ValidFrameCount,
+                    GetSamplesPerFrame(),
+                    m_pAudioFileReader->GetAudioData(),
+                    m_pAudioFileReader->GetFrameCount(),
+                    &m_fileIndex,
+                    m_mixRatio);
 
                 // we don't try to remember silence
                 ppOutputConnections[0]->u32BufferFlags = BUFFER_VALID;
@@ -197,7 +202,7 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
                                 ppInputConnections[0]->u32ValidFrameCount,
                                 GetSamplesPerFrame() );
                 }
-                
+
                 // pass along buffer flags
                 ppOutputConnections[0]->u32BufferFlags = ppInputConnections[0]->u32BufferFlags;
             }
@@ -230,24 +235,23 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
 // Return values:
 //
 //      S_OK on success, a failure code on failure
-STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)  
-{  
-    ASSERT_NONREALTIME();  
-    HRESULT hr = S_OK;  
-  
-    IF_TRUE_ACTION_JUMP(NULL == pTime, hr = E_POINTER, Exit);  
-  
+STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)
+{
+    ASSERT_NONREALTIME();
+    HRESULT hr = S_OK;
+
+    IF_TRUE_ACTION_JUMP(NULL == pTime, hr = E_POINTER, Exit);
     if (IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
     {
         *pTime = 0;
     }
     else
     {
-        *pTime = (m_fEnableDelayMFX ? HNS_DELAY : 0);
+        *pTime = (m_fEnableAudioMix ? 0 : 0); // No latency for audio mixing
     }
-  
-Exit:  
-    return hr;  
+
+Exit:
+    return hr;
 }
 
 //-------------------------------------------------------------------------
@@ -270,39 +274,41 @@ Exit:
 //      APOERR_NUM_CONNECTIONS_INVALID      Number of input or output connections is not valid on
 //                                          this APO.
 STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
-    APO_CONNECTION_DESCRIPTOR** ppInputConnections,  
+    APO_CONNECTION_DESCRIPTOR** ppInputConnections,
     UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
     ASSERT_NONREALTIME();
-    HRESULT hr = S_OK;
-    
-    hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
+    HRESULT hr = S_OK;    hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
     IF_FAILED_JUMP(hr, Exit);
-    
-    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_fEnableDelayMFX)
+
+    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_fEnableAudioMix)
     {
-        m_nDelayFrames = FRAMES_FROM_HNS(HNS_DELAY);
-        m_iDelayIndex = 0;
+        m_fileIndex = 0;
 
-        m_pf32DelayBuffer.Free();
-
-        // Allocate one second's worth of audio
-        // 
-        // This allocation is being done using CoTaskMemAlloc because the delay is very large
-        // This introduces a risk of glitches if the delay buffer gets paged out
-        //
-        // A more typical approach would be to allocate the memory using AERT_Allocate, which locks the memory
-        // But for the purposes of this APO, CoTaskMemAlloc suffices, and the risk of glitches is not important
-        m_pf32DelayBuffer.Allocate((size_t) GetSamplesPerFrame() * m_nDelayFrames);
-        WriteSilence(m_pf32DelayBuffer, m_nDelayFrames, GetSamplesPerFrame());
-        if (nullptr == m_pf32DelayBuffer)
+        // Initialize the audio file reader if needed
+        if (!m_pAudioFileReader || !m_pAudioFileReader->IsValid())
         {
-            hr = E_OUTOFMEMORY;
-            goto Exit;
+            m_pAudioFileReader = std::make_unique<AudioFileReader>();
+            hr = m_pAudioFileReader->Initialize(m_audioFilePath.c_str());
+            if (FAILED(hr))
+            {
+                m_pAudioFileReader.reset();
+                goto Exit;
+            }
+
+            // Resample if necessary to match our processing format
+            hr = m_pAudioFileReader->ResampleAudio(
+                static_cast<UINT32>(GetFramesPerSecond()),
+                GetSamplesPerFrame());
+            if (FAILED(hr))
+            {
+                m_pAudioFileReader.reset();
+                goto Exit;
+            }
         }
     }
-    
+
 Exit:
     return hr;
 }
@@ -395,11 +401,11 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
         // Save the processing mode being initialized.
         processingMode = papoSysFxInit2->AudioProcessingMode;
 
-        // There is information in the APOInitSystemEffects2 structure that could help facilitate 
+        // There is information in the APOInitSystemEffects2 structure that could help facilitate
         // proprietary communication between an APO instance and the KS pin that the APO is initialized on
         // Eg, in the case that an APO is implemented as an effect proxy for the effect processing hosted inside
-        // an driver (either host CPU based or offload DSP based), the example below uses a combination of 
-        // IDeviceTopology, IConnector, and IKsControl interfaces to communicate with the underlying audio driver. 
+        // an driver (either host CPU based or offload DSP based), the example below uses a combination of
+        // IDeviceTopology, IConnector, and IKsControl interfaces to communicate with the underlying audio driver.
         // the following following routine demonstrates how to implement how to communicate to an audio driver from a APO.
         ProprietaryCommunicationWithDriver(papoSysFxInit2);
     }
@@ -443,14 +449,12 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     // interfaces retrieved above to communicate with its counterpart audio
     // driver to configure any additional signal processing in the driver and
     // associated hardware.
-    //
-
-    //
+    //    //
     //  Get current effects settings
     //
     if (m_spAPOSystemEffectsProperties != NULL)
     {
-        m_fEnableDelayMFX = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_MFX, m_AudioProcessingMode);
+        m_fEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_MFX, m_AudioProcessingMode);
     }
 
     //
@@ -535,12 +539,11 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
             GUID effect;
             BOOL control;
         };
-        
-        EffectControl list[] =
+          EffectControl list[] =
         {
-            { InjectEffectId, m_fEnableDelayMFX },
+            { InjectEffectId, m_fEnableAudioMix },
         };
-    
+
         if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
         {
             // count the active effects
@@ -566,7 +569,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
                 hr = E_OUTOFMEMORY;
                 goto Exit;
             }
-            
+
             // pick up the active effects
             UINT j = 0;
             for (UINT i = 0; i < ARRAYSIZE(list); i++)
@@ -580,9 +583,9 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
             *ppEffectsIds = pEffectsIds;
             *pcEffects = cEffects;
         }
-        
+
         hr = S_OK;
-    }    
+    }
 
 Exit:
     if (effectsLocked)
@@ -594,7 +597,7 @@ Exit:
 
 HRESULT CAudioInjectorAPOMFX::ProprietaryCommunicationWithDriver(APOInitSystemEffects2 *_pAPOSysFxInit2)
 {
-    HRESULT hr = S_OK;    
+    HRESULT hr = S_OK;
     CComPtr<IMMDevice>	        spMyDevice;
     CComPtr<IDeviceTopology>    spMyDeviceTopology;
     CComPtr<IConnector>         spMyConnector;
@@ -714,29 +717,28 @@ HRESULT CAudioInjectorAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
             PROPERTYKEY key;
             LONG *value;
         };
-        
         KeyControl controls[] =
         {
-            { PKEY_Endpoint_Enable_Delay_MFX,        &m_fEnableDelayMFX },
+            { PKEY_Endpoint_Enable_Delay_MFX,        &m_fEnableAudioMix },
         };
-        
+
         for (int i = 0; i < ARRAYSIZE(controls); i++)
         {
             LONG fOldValue;
             LONG fNewValue = true;
-            
+
             // Get the state of whether channel swap MFX is enabled or not
             fNewValue = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, controls[i].key, m_AudioProcessingMode);
 
             // Delay in the new setting
             fOldValue = InterlockedExchange(controls[i].value, fNewValue);
-            
+
             if (fNewValue != fOldValue)
             {
                 nChanges++;
             }
         }
-        
+
         // If anything changed and a change event handle exists
         if ((nChanges > 0) && (m_hEffectsChangedEvent != NULL))
         {
@@ -779,12 +781,13 @@ CAudioInjectorAPOMFX::~CAudioInjectorAPOMFX(void)
         {
             m_spEnumerator->UnregisterEndpointNotificationCallback(this);
         }
-    }
-
-    if (m_hEffectsChangedEvent != NULL)
+    }    if (m_hEffectsChangedEvent != NULL)
     {
         CloseHandle(m_hEffectsChangedEvent);
     }
+
+    // Clean up the audio file reader
+    m_pAudioFileReader.reset();
 
     // Free locked memory allocations
     if (NULL != m_pf32Coefficients)
@@ -849,7 +852,7 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
     // get the uncompressed formats and channel masks
     hResult = ppInputConnections[0]->pFormat->GetUncompressedAudioFormat(&UncompInputFormat);
     IF_FAILED_JUMP(hResult, Exit);
-    
+
     hResult = ppOutputConnections[0]->pFormat->GetUncompressedAudioFormat(&UncompOutputFormat);
     IF_FAILED_JUMP(hResult, Exit);
 
@@ -871,7 +874,7 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
         m_pf32Coefficients[u32Index] = 1.0f - (FLOAT32)(f32InverseChannelCount)*u32Index;
     }
 
-    
+
 Exit:
     LeaveCriticalSection(&m_CritSec);
     return hResult;}
@@ -888,7 +891,7 @@ Exit:
 //
 
 //
-// Note that the IAudioSystemEffectsCustomFormats interface, if present, is invoked only on APOs 
+// Note that the IAudioSystemEffectsCustomFormats interface, if present, is invoked only on APOs
 // that attach directly to the connector in the 'DEFAULT' mode streaming graph. For example:
 // - APOs implementing global effects
 // - APOs implementing endpoint effects
@@ -904,7 +907,7 @@ struct CUSTOM_FORMAT_ITEM
     DEFINE_WAVEFORMATEX_GUID(WAVE_FORMAT_DOLBY_AC3_SPDIF)
 DEFINE_GUIDSTRUCT("00000092-0000-0010-8000-00aa00389b71", KSDATAFORMAT_SUBTYPE_AC3);
 #define KSDATAFORMAT_SUBTYPE_AC3 DEFINE_GUIDNAMED(KSDATAFORMAT_SUBTYPE_AC3)
- 
+
 CUSTOM_FORMAT_ITEM _rgCustomFormats[] =
 {
     {{ WAVE_FORMAT_EXTENSIBLE, 2, 44100, 176400, 4, 16, sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX), 16, KSAUDIO_SPEAKER_STEREO, KSDATAFORMAT_SUBTYPE_PCM},  L"Custom #1 (really 44.1 KHz, 16-bit, stereo)"},
@@ -951,7 +954,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormatCount
 // Parameters:
 //
 //      nFormat - [in] which format is being requested
-//      IAudioMediaType - [in] address of a variable that will receive a ptr 
+//      IAudioMediaType - [in] address of a variable that will receive a ptr
 //                             to a new IAudioMediaType object
 //
 // Return values:
@@ -964,7 +967,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormatCount
 //
 STDMETHODIMP CAudioInjectorAPOMFX::GetFormat
 (
-    UINT              nFormat, 
+    UINT              nFormat,
     IAudioMediaType** ppFormat
 )
 {
@@ -973,9 +976,9 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormat
     IF_TRUE_ACTION_JUMP((nFormat >= _cCustomFormats), hr = E_INVALIDARG, Exit);
     IF_TRUE_ACTION_JUMP((ppFormat == NULL), hr = E_POINTER, Exit);
 
-    *ppFormat = NULL; 
+    *ppFormat = NULL;
 
-    hr = CreateAudioMediaType(  (const WAVEFORMATEX*)&_rgCustomFormats[nFormat].wfxFmt, 
+    hr = CreateAudioMediaType(  (const WAVEFORMATEX*)&_rgCustomFormats[nFormat].wfxFmt,
                                 sizeof(_rgCustomFormats[nFormat].wfxFmt),
                                 ppFormat);
 
@@ -991,7 +994,7 @@ Exit:
 // Parameters:
 //
 //      nFormat - [in] which format is being requested
-//      ppwstrFormatRep - [in] address of a variable that will receive a ptr 
+//      ppwstrFormatRep - [in] address of a variable that will receive a ptr
 //                             to a new string description of the requested format
 //
 // Return values:
@@ -1049,15 +1052,15 @@ Exit:
 //
 //      S_OK                            Success
 //      S_FALSE                         The format of Input/output format pair is not supported. The ppSupportedOutPutFormat parameter returns a suggested new format
-//      APOERR_FORMAT_NOT_SUPPORTED     The format is not supported. The value of ppSupportedOutputFormat does not change. 
+//      APOERR_FORMAT_NOT_SUPPORTED     The format is not supported. The value of ppSupportedOutputFormat does not change.
 //      E_POINTER                       Null pointer passed
 //
 // Remarks:
 //
 STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
 (
-    IAudioMediaType *pInputFormat, 
-    IAudioMediaType *pRequestedOutputFormat, 
+    IAudioMediaType *pInputFormat,
+    IAudioMediaType *pRequestedOutputFormat,
     IAudioMediaType **ppSupportedOutputFormat
 )
 {

@@ -12,9 +12,13 @@
 #include <BaseAudioProcessingObject.h>
 #include <AudioInjectorAPOInterface.h>
 #include <AudioInjectorAPODll.h>
+#include <resource.h>
 
 #include <commonmacros.h>
 #include <devicetopology.h>
+#include <memory>
+#include <string>
+#include "AudioFileReader.h"
 
 _Analysis_mode_(_Analysis_code_type_user_driver_)
 
@@ -31,10 +35,11 @@ _Analysis_mode_(_Analysis_code_type_user_driver_)
 // {DE5E2F27-3A3E-486D-B038-AC4401A774D7}
 DEFINE_GUID(InjectEffectId,     0x2EC92F27, 0x3A3E, 0x486D, 0xB0, 0x38, 0xAC, 0x44, 0x01, 0xA7, 0x74, 0xD7);
 
-// 1000 ms of delay
-#define HNS_DELAY HNS_PER_SECOND
+// Default audio mix ratio (50%)
+#define DEFAULT_MIX_RATIO 0.5f
 
-#define FRAMES_FROM_HNS(hns) (ULONG)(1.0 * hns / HNS_PER_SECOND * GetFramesPerSecond() + 0.5)
+// Default audio file path
+#define DEFAULT_AUDIO_FILE_PATH L"C:\\Windows\\Media\\notify.wav"
 
 LONG GetCurrentEffectsSetting(IPropertyStore* properties, PROPERTYKEY pkeyEnable, GUID processingMode);
 
@@ -48,18 +53,18 @@ class CAudioInjectorAPOMFX :
     public IAudioSystemEffects2,
     // IAudioSystemEffectsCustomFormats may be optionally supported
     // by APOs that attach directly to the connector in the DEFAULT mode streaming graph
-    public IAudioSystemEffectsCustomFormats, 
+    public IAudioSystemEffectsCustomFormats,
     public IAudioInjectorAPOMFX
 {
-public:
-    // constructor
+public:    // constructor
     CAudioInjectorAPOMFX()
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
-    ,   m_fEnableDelayMFX(FALSE)
-    ,   m_nDelayFrames(0)
-    ,   m_iDelayIndex(0)
+    ,   m_fEnableAudioMix(FALSE)
+    ,   m_fileIndex(0)
+    ,   m_mixRatio(DEFAULT_MIX_RATIO)
+    ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
     {
         m_pf32Coefficients = NULL;
     }
@@ -91,7 +96,7 @@ public:
     STDMETHOD(GetLatency)(HNSTIME* pTime);
 
     STDMETHOD(LockForProcess)(UINT32 u32NumInputConnections,
-        APO_CONNECTION_DESCRIPTOR** ppInputConnections,  
+        APO_CONNECTION_DESCRIPTOR** ppInputConnections,
         UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections);
 
     STDMETHOD(Initialize)(UINT32 cbDataSize, BYTE* pbyData);
@@ -100,34 +105,34 @@ public:
     STDMETHOD(GetEffectsList)(_Outptr_result_buffer_maybenull_(*pcEffects)  LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event);
 
     virtual HRESULT ValidateAndCacheConnectionInfo(
-                                    UINT32 u32NumInputConnections, 
-                                    APO_CONNECTION_DESCRIPTOR** ppInputConnections, 
-                                    UINT32 u32NumOutputConnections, 
+                                    UINT32 u32NumInputConnections,
+                                    APO_CONNECTION_DESCRIPTOR** ppInputConnections,
+                                    UINT32 u32NumOutputConnections,
                                     APO_CONNECTION_DESCRIPTOR** ppOutputConnections);
 
     // IMMNotificationClient
-    STDMETHODIMP OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) 
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        UNREFERENCED_PARAMETER(dwNewState); 
-        return S_OK; 
+    STDMETHODIMP OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        UNREFERENCED_PARAMETER(dwNewState);
+        return S_OK;
     }
     STDMETHODIMP OnDeviceAdded(LPCWSTR pwstrDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnDeviceRemoved(LPCWSTR pwstrDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(flow); 
-        UNREFERENCED_PARAMETER(role); 
-        UNREFERENCED_PARAMETER(pwstrDefaultDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(flow);
+        UNREFERENCED_PARAMETER(role);
+        UNREFERENCED_PARAMETER(pwstrDefaultDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
@@ -138,12 +143,10 @@ public:
     STDMETHODIMP GetFormatRepresentation(UINT nFormat, _Outptr_ LPWSTR* ppwstrFormatRep);
 
     // IAudioProcessingObject
-    STDMETHODIMP IsOutputFormatSupported(IAudioMediaType *pOppositeFormat, IAudioMediaType *pRequestedOutputFormat, IAudioMediaType **ppSupportedOutputFormat);
-
-    STDMETHODIMP CheckCustomFormats(IAudioMediaType *pRequestedFormat);
+    STDMETHODIMP IsOutputFormatSupported(IAudioMediaType *pOppositeFormat, IAudioMediaType *pRequestedOutputFormat, IAudioMediaType **ppSupportedOutputFormat);    STDMETHODIMP CheckCustomFormats(IAudioMediaType *pRequestedFormat);
 
 public:
-    LONG                                    m_fEnableDelayMFX;
+    LONG                                    m_fEnableAudioMix;
     GUID                                    m_AudioProcessingMode;
     CComPtr<IPropertyStore>                 m_spAPOSystemEffectsProperties;
     CComPtr<IMMDeviceEnumerator>            m_spEnumerator;
@@ -152,9 +155,11 @@ public:
     // Locked memory
     FLOAT32                                 *m_pf32Coefficients;
 
-    CComHeapPtr<FLOAT32>                    m_pf32DelayBuffer;
-    UINT32                                  m_nDelayFrames;
-    UINT32                                  m_iDelayIndex;
+    // Audio file mixing properties
+    std::unique_ptr<AudioFileReader>        m_pAudioFileReader;
+    FLOAT32                                 m_mixRatio;
+    UINT32                                  m_fileIndex;
+    std::wstring                            m_audioFilePath;
 
 private:
     CCriticalSection                        m_EffectsLock;
@@ -176,15 +181,15 @@ class CAudioInjectorAPOSFX :
     public IAudioSystemEffects2,
     public IAudioInjectorAPOSFX
 {
-public:
-    // constructor
+public:    // constructor
     CAudioInjectorAPOSFX()
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
-    ,   m_fEnableDelaySFX(FALSE)
-    ,   m_nDelayFrames(0)
-    ,   m_iDelayIndex(0)
+    ,   m_fEnableAudioMix(FALSE)
+    ,   m_fileIndex(0)
+    ,   m_mixRatio(DEFAULT_MIX_RATIO)
+    ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
     {
     }
 
@@ -212,7 +217,7 @@ public:
     STDMETHOD(GetLatency)(HNSTIME* pTime);
 
     STDMETHOD(LockForProcess)(UINT32 u32NumInputConnections,
-        APO_CONNECTION_DESCRIPTOR** ppInputConnections,  
+        APO_CONNECTION_DESCRIPTOR** ppInputConnections,
         UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections);
 
     STDMETHOD(Initialize)(UINT32 cbDataSize, BYTE* pbyData);
@@ -221,33 +226,33 @@ public:
     STDMETHOD(GetEffectsList)(_Outptr_result_buffer_maybenull_(*pcEffects)  LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event);
 
     // IMMNotificationClient
-    STDMETHODIMP OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) 
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        UNREFERENCED_PARAMETER(dwNewState); 
-        return S_OK; 
+    STDMETHODIMP OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        UNREFERENCED_PARAMETER(dwNewState);
+        return S_OK;
     }
     STDMETHODIMP OnDeviceAdded(LPCWSTR pwstrDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnDeviceRemoved(LPCWSTR pwstrDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(pwstrDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(pwstrDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
-    { 
-        UNREFERENCED_PARAMETER(flow); 
-        UNREFERENCED_PARAMETER(role); 
-        UNREFERENCED_PARAMETER(pwstrDefaultDeviceId); 
-        return S_OK; 
+    {
+        UNREFERENCED_PARAMETER(flow);
+        UNREFERENCED_PARAMETER(role);
+        UNREFERENCED_PARAMETER(pwstrDefaultDeviceId);
+        return S_OK;
     }
     STDMETHODIMP OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
 public:
-    LONG                                    m_fEnableDelaySFX;
+    LONG                                    m_fEnableAudioMix;
     GUID                                    m_AudioProcessingMode;
     CComPtr<IPropertyStore>                 m_spAPOSystemEffectsProperties;
     CComPtr<IMMDeviceEnumerator>            m_spEnumerator;
@@ -256,9 +261,11 @@ public:
     CCriticalSection                        m_EffectsLock;
     HANDLE                                  m_hEffectsChangedEvent;
 
-    CComHeapPtr<FLOAT32>                    m_pf32DelayBuffer;
-    UINT32                                  m_nDelayFrames;
-    UINT32                                  m_iDelayIndex;
+    // Audio file mixing properties
+    std::unique_ptr<AudioFileReader>        m_pAudioFileReader;
+    FLOAT32                                 m_mixRatio;
+    UINT32                                  m_fileIndex;
+    std::wstring                            m_audioFilePath;
 };
 #pragma AVRT_VTABLES_END
 
@@ -266,20 +273,22 @@ OBJECT_ENTRY_AUTO(__uuidof(AudioInjectorAPOMFX), CAudioInjectorAPOMFX)
 OBJECT_ENTRY_AUTO(__uuidof(AudioInjectorAPOSFX), CAudioInjectorAPOSFX)
 
 //
-//   Declaration of the ProcessDelay routine.
+//   Declaration of the ProcessAudioMix routine.
 //
-void ProcessDelay(
+void ProcessAudioMix(
     _Out_writes_(u32ValidFrameCount * u32SamplesPerFrame)
         FLOAT32 *pf32OutputFrames,
     _In_reads_(u32ValidFrameCount * u32SamplesPerFrame)
         const FLOAT32 *pf32InputFrames,
     UINT32       u32ValidFrameCount,
     UINT32       u32SamplesPerFrame,
-    _Inout_updates_(u32DelayFrames * u32SamplesPerFrame)
-        FLOAT32 *pf32DelayBuffer,
-    UINT32       u32DelayFrames,
+    _In_reads_opt_(u32FileFrameCount * u32SamplesPerFrame)
+        const FLOAT32 *pf32FileBuffer,
+    UINT32       u32FileFrameCount,
     _Inout_
-        UINT32  *pu32DelayIndex );
+        UINT32  *pu32FileIndex,
+    FLOAT32     fMixRatio);
+
 
 //
 //   Convenience methods
