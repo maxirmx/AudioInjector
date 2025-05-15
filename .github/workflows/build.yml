@@ -1,0 +1,41 @@
+name: Build AudioInjectorAPO
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.3
+
+    - name: Setup Visual Studio Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Build AudioInjectorAPO (Release|x64)
+      working-directory: ${{ github.workspace }}/AudioInjectorAPO
+      shell: pwsh
+      run: |
+        ./build-gha.ps1 -Configuration Release -Platform x64
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: AudioInjectorAPO-Release-x64
+        path: ${{ github.workspace }}/AudioInjectorAPO/x64/Release/AudioInjectorAPO.dll
+        if-no-files-found: error
+        retention-days: 1

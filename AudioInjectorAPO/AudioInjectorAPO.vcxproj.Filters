@@ -48,11 +48,11 @@
     <ClInclude Include="APOLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AudioFileReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="*.ico;*.cur;*.bmp;*.dlg;*.rct;*.gif;*.jpg;*.jpeg;*.wav;*.jpe;*.tiff;*.tif;*.png;*.rc2">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="AudioInjectorAPODll.def">
       <Filter>Source Files</Filter>
     </None>
@@ -67,9 +67,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AudioInjector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AudioInjectorAPODll.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -77,6 +74,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AudioInjectorAPOSFX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioMixer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
