@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Release
+    name: Build and Test
     runs-on: windows-latest
 
     steps:
@@ -26,11 +26,24 @@ jobs:
     - name: Setup Visual Studio Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: Build AudioInjectorAPOUnitTests (Debug|x64)
+      working-directory: ${{ github.workspace }}/AudioInjectorAPOUnitTests
+      shell: pwsh
+      run: |
+        Write-Host "Building AudioInjector APO unit tests..." -ForegroundColor Yellow
+        & MSBuild.exe AudioInjectorAPOUnitTests.vcxproj /p:Configuration=Debug /p:Platform=x64
+
+    - name: Run AudioInjectorAPOUnitTests
+      shell: pwsh
+      run: |
+        Write-Host "Running AudioInjector APO unit tests..." -ForegroundColor Yellow
+        & "${{ github.workspace }}/x64/Debug/AudioInjectorAPOUnitTests.dll" /Logger:trx
+
     - name: Build AudioInjectorAPO (Release|x64)
       working-directory: ${{ github.workspace }}/AudioInjectorAPO
       shell: pwsh
       run: |
-        Write-Host "Building project..." -ForegroundColor Yellow
+        Write-Host "Building AudioInjector APO ..." -ForegroundColor Yellow
         & MSBuild.exe AudioInjectorAPO.vcxproj /p:Configuration=Release /p:Platform=x64
 
     - name: Upload build artifacts
