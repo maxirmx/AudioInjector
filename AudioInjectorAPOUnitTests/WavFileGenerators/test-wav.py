@@ -1,6 +1,6 @@
 # Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 # All rights reserved.
-# This file is a part of AudioInjector applcation
+# This file is a part of AudioInjector application
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
