@@ -54,7 +54,6 @@ public:
     // Resample the audio data to match the target sample rate and channel count
     HRESULT ResampleAudio(UINT32 targetSampleRate, UINT32 targetChannelCount);
 
-private:
     // Clean up and release resources
     void Cleanup();
 

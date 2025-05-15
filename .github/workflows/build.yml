@@ -1,11 +1,36 @@
-name: Build AudioInjectorAPO
+# Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+# All rights reserved.
+# This file is a part of AudioInjector application
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+name: Build and Test AudioInjector
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
@@ -13,7 +38,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Release
+    name: Build and Test
     runs-on: windows-latest
 
     steps:
@@ -26,11 +51,43 @@ jobs:
     - name: Setup Visual Studio Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: Build AudioInjectorAPOUnitTests (Debug|x64)
+      working-directory: ${{ github.workspace }}/AudioInjectorAPOUnitTests
+      shell: pwsh
+      run: |
+        Write-Host "Building AudioInjector APO unit tests..." -ForegroundColor Yellow
+        & MSBuild.exe AudioInjectorAPOUnitTests.vcxproj /p:Configuration=Debug /p:Platform=x64
+
+    - name: Run AudioInjectorAPOUnitTests
+      shell: pwsh
+      run: |
+        Write-Host "Running AudioInjector APO unit tests..." -ForegroundColor Yellow
+        $testDllPath = Join-Path ${{ github.workspace }} "x64\Debug\AudioInjectorAPOUnitTests.dll"
+        if (Test-Path $testDllPath) {
+          Write-Host "Found test DLL at: $testDllPath" -ForegroundColor Green
+          & $testDllPath /Logger:trx
+        } else {
+          Write-Host "Test DLL not found at expected path: $testDllPath" -ForegroundColor Red
+          Write-Host "Searching for test DLL..."
+          $foundDlls = Get-ChildItem -Path ${{ github.workspace }} -Filter "AudioInjectorAPOUnitTests.dll" -Recurse
+          if ($foundDlls) {
+            foreach ($dll in $foundDlls) {
+              Write-Host "Found: $($dll.FullName)" -ForegroundColor Green
+              &         vstest.console.exe $dll.FullName /Logger:trx
+              break
+            }
+          } else {
+            Write-Error "Could not find AudioInjectorAPOUnitTests.dll"
+            exit 1
+          }
+        }
+
     - name: Build AudioInjectorAPO (Release|x64)
       working-directory: ${{ github.workspace }}/AudioInjectorAPO
       shell: pwsh
       run: |
-        ./build-gha.ps1 -Configuration Release -Platform x64
+        Write-Host "Building AudioInjector APO ..." -ForegroundColor Yellow
+        & MSBuild.exe AudioInjectorAPO.vcxproj /p:Configuration=Release /p:Platform=x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
