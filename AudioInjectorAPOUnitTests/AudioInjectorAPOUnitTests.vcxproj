@@ -162,12 +162,6 @@
     <ClCompile Include="AudioInjectorAPOUnitTests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AudioInjectorAPO\AudioInjectorAPO.vcxproj">
-      <Project>{8851ab85-70b3-4798-a149-ba366df9ec25}</Project>
-      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <CopyFileToFolders Include="WavFiles\test.wav">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
