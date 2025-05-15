@@ -85,7 +85,7 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
     UNREFERENCED_PARAMETER(u32NumInputConnections);
     UNREFERENCED_PARAMETER(u32NumOutputConnections);
 
- //   APO_LOG_TRACE_F("APOProcess");
+    // APO_LOG_TRACE_F("APOProcess");
 
     FLOAT32 *pf32InputFrames, *pf32OutputFrames;
 
