@@ -10,7 +10,7 @@ param (
 )
 
 # MSBuild path
-$msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64\MSBuild.exe"
+$msbuildPath = "MSBuild.exe"
 $projectFile = "AudioInjectorAPO.vcxproj"
 
 # Validate MSBuild exists
