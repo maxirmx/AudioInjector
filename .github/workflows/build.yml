@@ -61,7 +61,26 @@ jobs:
     - name: Run AudioInjectorAPOUnitTests
       shell: pwsh
       run: |
-        vstest.console.exe "${{ github.workspace }}\x64\Debug\AudioInjectorAPOUnitTests.dll" /Logger:trx
+        Write-Host "Running AudioInjector APO unit tests..." -ForegroundColor Yellow
+        $testDllPath = Join-Path ${{ github.workspace }} "x64\Debug\AudioInjectorAPOUnitTests.dll"
+        if (Test-Path $testDllPath) {
+          Write-Host "Found test DLL at: $testDllPath" -ForegroundColor Green
+          & $testDllPath /Logger:trx
+        } else {
+          Write-Host "Test DLL not found at expected path: $testDllPath" -ForegroundColor Red
+          Write-Host "Searching for test DLL..."
+          $foundDlls = Get-ChildItem -Path ${{ github.workspace }} -Filter "AudioInjectorAPOUnitTests.dll" -Recurse
+          if ($foundDlls) {
+            foreach ($dll in $foundDlls) {
+              Write-Host "Found: $($dll.FullName)" -ForegroundColor Green
+              &         vstest.console.exe $dll.FullName /Logger:trx
+              break
+            }
+          } else {
+            Write-Error "Could not find AudioInjectorAPOUnitTests.dll"
+            exit 1
+          }
+        }
 
     - name: Build AudioInjectorAPO (Release|x64)
       working-directory: ${{ github.workspace }}/AudioInjectorAPO
