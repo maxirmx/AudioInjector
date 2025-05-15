@@ -173,7 +173,7 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
             // Process with audio mixing if enabled
             if (
                 !IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) &&
-                m_fEnableAudioMix &&
+                m_bEnableAudioMix &&
                 m_pAudioFileReader &&
                 m_pAudioFileReader->IsValid()
             )
@@ -247,7 +247,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)
     }
     else
     {
-        *pTime = (m_fEnableAudioMix ? 0 : 0); // No latency for audio mixing
+        *pTime = (m_bEnableAudioMix ? 0 : 0); // No latency for audio mixing
     }
 
 Exit:
@@ -282,7 +282,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
     IF_FAILED_JUMP(hr, Exit);
 
-    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_fEnableAudioMix)
+    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
     {
         m_fileIndex = 0;
 
@@ -454,7 +454,7 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     //
     if (m_spAPOSystemEffectsProperties != NULL)
     {
-        m_fEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_MFX, m_AudioProcessingMode);
+        m_bEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_MFX, m_AudioProcessingMode);
     }
 
     //
@@ -541,7 +541,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
         };
           EffectControl list[] =
         {
-            { InjectEffectId, m_fEnableAudioMix },
+            { InjectEffectId, m_bEnableAudioMix },
         };
 
         if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
@@ -719,7 +719,7 @@ HRESULT CAudioInjectorAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
         };
         KeyControl controls[] =
         {
-            { PKEY_Endpoint_Enable_Delay_MFX,        &m_fEnableAudioMix },
+            { PKEY_Endpoint_Enable_Delay_MFX,        &m_bEnableAudioMix },
         };
 
         for (int i = 0; i < ARRAYSIZE(controls); i++)
@@ -781,7 +781,9 @@ CAudioInjectorAPOMFX::~CAudioInjectorAPOMFX(void)
         {
             m_spEnumerator->UnregisterEndpointNotificationCallback(this);
         }
-    }    if (m_hEffectsChangedEvent != NULL)
+    }
+
+    if (m_hEffectsChangedEvent != NULL)
     {
         CloseHandle(m_hEffectsChangedEvent);
     }

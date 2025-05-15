@@ -124,7 +124,7 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
             // Process with audio mixing if enabled
             if (
                 !IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) &&
-                m_fEnableAudioMix &&
+                m_bEnableAudioMix &&
                 m_pAudioFileReader &&
                 m_pAudioFileReader->IsValid()
             )
@@ -236,7 +236,7 @@ STDMETHODIMP CAudioInjectorAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
     IF_FAILED_JUMP(hr, Exit);
 
-    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_fEnableAudioMix)
+    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
     {
         // Create and initialize audio file reader
         m_pAudioFileReader = std::make_unique<AudioFileReader>();
@@ -416,7 +416,7 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     //
     if (m_spAPOSystemEffectsProperties != NULL)
     {
-        m_fEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_SFX, m_AudioProcessingMode);
+        m_bEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_SFX, m_AudioProcessingMode);
 
         // Try to read custom audio file path from properties (if available)
         CComPtr<IPropertyStore> spProperties = m_spAPOSystemEffectsProperties;
@@ -536,7 +536,7 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenul
         };
           EffectControl list[] =
         {
-            { InjectEffectId, m_fEnableAudioMix },
+            { InjectEffectId, m_bEnableAudioMix },
         };
 
         if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
@@ -633,7 +633,7 @@ HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
         };
         KeyControl controls[] =
         {
-            { PKEY_Endpoint_Enable_Delay_SFX,        &m_fEnableAudioMix },
+            { PKEY_Endpoint_Enable_Delay_SFX,        &m_bEnableAudioMix },
         };
 
         for (int i = 0; i < ARRAYSIZE(controls); i++)
@@ -677,7 +677,7 @@ HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
             m_audioFilePath = var.pwszVal;
 
             // If we're currently locked for processing, reload the audio file
-            if (m_bIsLocked && m_fEnableAudioMix)
+            if (m_bIsLocked && m_bEnableAudioMix)
             {
                 // Create a new reader with the updated path
                 std::unique_ptr<AudioFileReader> newReader = std::make_unique<AudioFileReader>();

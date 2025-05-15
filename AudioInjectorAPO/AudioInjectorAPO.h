@@ -61,7 +61,7 @@ public:    // constructor
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
-    ,   m_fEnableAudioMix(FALSE)
+    ,   m_bEnableAudioMix(FALSE)
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
@@ -146,7 +146,7 @@ public:
     STDMETHODIMP IsOutputFormatSupported(IAudioMediaType *pOppositeFormat, IAudioMediaType *pRequestedOutputFormat, IAudioMediaType **ppSupportedOutputFormat);    STDMETHODIMP CheckCustomFormats(IAudioMediaType *pRequestedFormat);
 
 public:
-    LONG                                    m_fEnableAudioMix;
+    LONG                                    m_bEnableAudioMix;
     GUID                                    m_AudioProcessingMode;
     CComPtr<IPropertyStore>                 m_spAPOSystemEffectsProperties;
     CComPtr<IMMDeviceEnumerator>            m_spEnumerator;
@@ -186,7 +186,7 @@ public:    // constructor
     :   CBaseAudioProcessingObject(sm_RegProperties)
     ,   m_hEffectsChangedEvent(NULL)
     ,   m_AudioProcessingMode(AUDIO_SIGNALPROCESSINGMODE_DEFAULT)
-    ,   m_fEnableAudioMix(FALSE)
+    ,   m_bEnableAudioMix(FALSE)
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
@@ -252,7 +252,7 @@ public:
     STDMETHODIMP OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
 public:
-    LONG                                    m_fEnableAudioMix;
+    LONG                                    m_bEnableAudioMix;
     GUID                                    m_AudioProcessingMode;
     CComPtr<IPropertyStore>                 m_spAPOSystemEffectsProperties;
     CComPtr<IMMDeviceEnumerator>            m_spEnumerator;
