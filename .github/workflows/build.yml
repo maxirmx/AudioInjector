@@ -30,7 +30,8 @@ jobs:
       working-directory: ${{ github.workspace }}/AudioInjectorAPO
       shell: pwsh
       run: |
-        ./build-gha.ps1 -Configuration Release -Platform x64
+        Write-Host "Building project..." -ForegroundColor Yellow
+        & MSBuild.exe AudioInjectorAPO.vcxproj /p:Configuration=Release /p:Platform=x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
