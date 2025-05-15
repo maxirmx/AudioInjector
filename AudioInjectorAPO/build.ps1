@@ -14,10 +14,10 @@ $msbuildPath = "MSBuild.exe"
 $projectFile = "AudioInjectorAPO.vcxproj"
 
 # Validate MSBuild exists
-if (-not (Test-Path $msbuildPath)) {
-    Write-Host "ERROR: MSBuild not found at $msbuildPath" -ForegroundColor Red
-    exit 1
-}
+#if (-not (Test-Path $msbuildPath)) {
+#    Write-Host "ERROR: MSBuild not found at $msbuildPath" -ForegroundColor Red
+#    exit 1
+#}
 
 # Validate project file exists
 if (-not (Test-Path $projectFile)) {
