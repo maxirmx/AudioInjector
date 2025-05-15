@@ -10,10 +10,12 @@
 #include <mfapi.h>
 #include <mfreadwrite.h>
 #include <wmcodecdsp.h>
+#include <mftransform.h>
 
 #pragma comment(lib, "mfplat.lib")
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
+#pragma comment(lib, "wmcodecdspuuid.lib")
 
 AudioFileReader::AudioFileReader()
     : m_frameCount(0)
@@ -173,53 +175,208 @@ HRESULT AudioFileReader::ResampleAudio(UINT32 targetSampleRate, UINT32 targetCha
     if (m_sampleRate == targetSampleRate && m_channelCount == targetChannelCount)
         return S_OK;
 
-    // TODO: Implement resampling using Media Foundation or another resampler
-    // For this initial implementation, we'll just do a basic channel conversion
-    // without sample rate conversion for simplicity
+    // Validate input
+    if (!m_isInitialized || m_frameCount == 0 || !m_pAudioData)
+        return E_FAIL;
 
-    if (m_channelCount != targetChannelCount) {
-        // Simple channel conversion (this is a very basic implementation)
-        std::unique_ptr<FLOAT32[]> newBuffer = std::make_unique<FLOAT32[]>(static_cast<UINT64>(m_frameCount) * targetChannelCount);
+    HRESULT hr = S_OK;
 
-        for (UINT64 i = 0; i < m_frameCount; i++) {
-            if (m_channelCount == 1 && targetChannelCount > 1) {
-                // Mono to multi-channel - duplicate the mono channel
-                float sample = m_pAudioData[i];
-                for (UINT32 ch = 0; ch < targetChannelCount; ch++) {
-                    newBuffer[i * targetChannelCount + ch] = sample;
-                }
-            }
-            else if (m_channelCount > 1 && targetChannelCount == 1) {
-                // Multi-channel to mono - average all channels
-                float sum = 0.0f;
-                for (UINT32 ch = 0; ch < m_channelCount; ch++) {
-                    sum += m_pAudioData[i * m_channelCount + ch];
-                }
-                newBuffer[i] = sum / m_channelCount;
-            }
-            else {
-                // Generic case - take the first targetChannelCount channels
-                // or duplicate/pad with zeros as needed
-                for (UINT32 ch = 0; ch < targetChannelCount; ch++) {
-                    if (ch < m_channelCount) {
-                        newBuffer[i * targetChannelCount + ch] = m_pAudioData[i * m_channelCount + ch];
-                    }
-                    else {
-                        newBuffer[i * targetChannelCount + ch] = 0.0f;
-                    }
-                }
-            }
+    // Create media foundation resources for resampling
+    IMFMediaBuffer* pInputBuffer = nullptr;
+    IMFSample* pInputSample = nullptr;
+    IMFMediaType* pInputType = nullptr;
+    IMFMediaType* pOutputType = nullptr;
+    IMFTransform* pResampler = nullptr;
+    IMFMediaBuffer* pOutputBuffer = nullptr;
+    IMFSample* pOutputSample = nullptr;
+
+    // Calculate input buffer size in bytes
+    UINT32 inputBufferSize = m_frameCount * m_channelCount * sizeof(FLOAT32);
+
+    try {
+        // 1. Create a Media Foundation resampler transform
+        hr = CoCreateInstance(CLSID_CResamplerMediaObject, nullptr, CLSCTX_INPROC_SERVER,
+                             IID_IMFTransform, (void**)&pResampler);
+        if (FAILED(hr)) goto done;
+
+        // 2. Create and configure input media type
+        hr = MFCreateMediaType(&pInputType);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_Float);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, m_channelCount);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, m_sampleRate);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, m_channelCount * sizeof(FLOAT32));
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, m_sampleRate * m_channelCount * sizeof(FLOAT32));
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 32); // 32-bit float
+        if (FAILED(hr)) goto done;
+
+        hr = pInputType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+        if (FAILED(hr)) goto done;
+
+        // 3. Create and configure output media type
+        hr = MFCreateMediaType(&pOutputType);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_Float);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, targetChannelCount);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, targetSampleRate);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, targetChannelCount * sizeof(FLOAT32));
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, targetSampleRate * targetChannelCount * sizeof(FLOAT32));
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 32); // 32-bit float
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+        if (FAILED(hr)) goto done;
+
+        // 4. Set input and output types on the resampler transform
+        hr = pResampler->SetInputType(0, pInputType, 0);
+        if (FAILED(hr)) goto done;
+
+        hr = pResampler->SetOutputType(0, pOutputType, 0);
+        if (FAILED(hr)) goto done;
+
+        // 5. Process the audio data through the resampler
+
+        // Create input sample
+        hr = MFCreateSample(&pInputSample);
+        if (FAILED(hr)) goto done;
+
+        // Create input buffer
+        hr = MFCreateMemoryBuffer(inputBufferSize, &pInputBuffer);
+        if (FAILED(hr)) goto done;
+
+        // Copy audio data to input buffer
+        BYTE* pInputData = nullptr;
+        hr = pInputBuffer->Lock(&pInputData, nullptr, nullptr);
+        if (FAILED(hr)) goto done;
+
+        memcpy(pInputData, m_pAudioData.get(), inputBufferSize);
+
+        hr = pInputBuffer->Unlock();
+        if (FAILED(hr)) goto done;
+
+        hr = pInputBuffer->SetCurrentLength(inputBufferSize);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputSample->AddBuffer(pInputBuffer);
+        if (FAILED(hr)) goto done;
+
+        // Set sample timestamp and duration
+        LONGLONG sampleDuration = static_cast<LONGLONG>(m_frameCount) * 10000000 / m_sampleRate;
+        hr = pInputSample->SetSampleTime(0);
+        if (FAILED(hr)) goto done;
+
+        hr = pInputSample->SetSampleDuration(sampleDuration);
+        if (FAILED(hr)) goto done;
+
+        // Process input
+        hr = pResampler->ProcessInput(0, pInputSample, 0);
+        if (FAILED(hr)) goto done;
+
+        // 6. Get the output from the transform
+        MFT_OUTPUT_DATA_BUFFER outputDataBuffer = {};
+        DWORD dwStatus = 0;
+
+        // Create output sample
+        hr = MFCreateSample(&pOutputSample);
+        if (FAILED(hr)) goto done;
+
+        // Calculate expected output buffer size
+        UINT32 expectedFrames = (UINT32)((UINT64)m_frameCount * targetSampleRate / m_sampleRate);
+        UINT32 outputBufferSize = expectedFrames * targetChannelCount * sizeof(FLOAT32);
+
+        // Create output buffer
+        hr = MFCreateMemoryBuffer(outputBufferSize, &pOutputBuffer);
+        if (FAILED(hr)) goto done;
+
+        hr = pOutputSample->AddBuffer(pOutputBuffer);
+        if (FAILED(hr)) goto done;
+
+        outputDataBuffer.pSample = pOutputSample;
+
+        // Process output
+        hr = pResampler->ProcessOutput(0, 1, &outputDataBuffer, &dwStatus);
+        if (FAILED(hr)) goto done;
+
+        // 7. Copy resampled data from output buffer to our member variable
+
+        // Get output buffer details
+        IMFMediaBuffer* pActualOutputBuffer = nullptr;
+        hr = pOutputSample->GetBufferByIndex(0, &pActualOutputBuffer);
+        if (FAILED(hr)) goto done;
+
+        BYTE* pOutputData = nullptr;
+        DWORD cbOutputLength = 0;
+
+        hr = pActualOutputBuffer->Lock(&pOutputData, nullptr, &cbOutputLength);
+        if (FAILED(hr)) {
+            SafeRelease(&pActualOutputBuffer);
+            goto done;
         }
 
-        m_pAudioData = std::move(newBuffer);
+        // Calculate actual frame count from output buffer size
+        UINT32 actualFrames = cbOutputLength / (targetChannelCount * sizeof(FLOAT32));
+
+        // Allocate new buffer for the resampled audio
+        std::unique_ptr<FLOAT32[]> newAudioData = std::make_unique<FLOAT32[]>(static_cast<UINT64>(actualFrames) * targetChannelCount);
+
+        // Copy resampled data
+        memcpy(newAudioData.get(), pOutputData, cbOutputLength);
+
+        // Unlock buffer
+        pActualOutputBuffer->Unlock();
+        SafeRelease(&pActualOutputBuffer);
+
+        // 8. Update member variables with new audio data
+        m_pAudioData = std::move(newAudioData);
+        m_frameCount = actualFrames;
+        m_sampleRate = targetSampleRate;
         m_channelCount = targetChannelCount;
+
+    } catch (std::bad_alloc&) {
+        hr = E_OUTOFMEMORY;
     }
 
-    // Note: Sample rate conversion is not implemented in this simple version
-    // A real implementation would use a resampler
+done:
+    // Clean up
+    SafeRelease(&pInputBuffer);
+    SafeRelease(&pInputSample);
+    SafeRelease(&pInputType);
+    SafeRelease(&pOutputType);
+    SafeRelease(&pResampler);
+    SafeRelease(&pOutputBuffer);
+    SafeRelease(&pOutputSample);
 
-    return S_OK;
+    return hr;
 }
+
 
 void AudioFileReader::Cleanup()
 {
