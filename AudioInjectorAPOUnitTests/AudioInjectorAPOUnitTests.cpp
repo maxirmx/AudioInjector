@@ -1,6 +1,6 @@
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of AudioInjector applcation
+// This file is a part of AudioInjector application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -23,7 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "CppUnitTest.h" 
+#include "CppUnitTest.h"
 #include "../AudioInjectorAPO/AudioFileReader.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -40,8 +40,8 @@ namespace AudioInjectorAPOUnitTests
            HMODULE hModule = nullptr;
 
            // Get handle to the current module (the test DLL)
-            GetModuleHandleExW(  
-               GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,  
+            GetModuleHandleExW(
+               GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
                reinterpret_cast<LPCWSTR>(&modulePath[0]),
                &hModule);
 
