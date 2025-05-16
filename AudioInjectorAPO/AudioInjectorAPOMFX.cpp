@@ -454,7 +454,7 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     //
     if (m_spAPOSystemEffectsProperties != NULL)
     {
-        m_bEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Delay_MFX, m_AudioProcessingMode);
+        m_bEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Audio_Inject_MFX, m_AudioProcessingMode);
     }
 
     //
@@ -701,10 +701,8 @@ HRESULT CAudioInjectorAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
     if (!m_spAPOSystemEffectsProperties)
     {
         return hr;
-    }
-
-    // If either the master disable or our APO's enable properties changed...
-    if (PK_EQUAL(key, PKEY_Endpoint_Enable_Delay_MFX) ||
+    }    // If either the master disable or our APO's enable properties changed...
+    if (PK_EQUAL(key, PKEY_Endpoint_Enable_Audio_Inject_MFX) ||
         PK_EQUAL(key, PKEY_AudioEndpoint_Disable_SysFx))
     {
         LONG nChanges = 0;
@@ -716,10 +714,9 @@ HRESULT CAudioInjectorAPOMFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
         {
             PROPERTYKEY key;
             LONG *value;
-        };
-        KeyControl controls[] =
+        };        KeyControl controls[] =
         {
-            { PKEY_Endpoint_Enable_Delay_MFX,        &m_bEnableAudioMix },
+            { PKEY_Endpoint_Enable_Audio_Inject_MFX,        &m_bEnableAudioMix },
         };
 
         for (int i = 0; i < ARRAYSIZE(controls); i++)

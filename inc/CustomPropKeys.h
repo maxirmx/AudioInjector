@@ -18,12 +18,12 @@
 
 // ----------------------------------------------------------------------
 //
-// PKEY_Endpoint_Enable_Delay_SFX: When value is 0x00000001, Delay local effect is enabled
+// PKEY_Endpoint_Enable_Audio_Inject_SFX: When value is 0x00000001, Audio Inject local effect is enabled
 // {A44531EF-5377-4944-AE15-53789A9629C7},4
 // vartype = VT_UI4
-DEFINE_PROPERTYKEY(PKEY_Endpoint_Enable_Delay_SFX, 0xa44531ef, 0x5377, 0x4944, 0xae, 0x15, 0x53, 0x78, 0x9a, 0x96, 0x29, 0xc7, 4);
+DEFINE_PROPERTYKEY(PKEY_Endpoint_Enable_Audio_Inject_SFX, 0xa44531ef, 0x5377, 0x4944, 0xae, 0x15, 0x53, 0x78, 0x9a, 0x96, 0x29, 0xc7, 4);
 
-// PKEY_Endpoint_Enable_Delay_MFX: When value is 0x00000001, Delay global effect is enabled
+// PKEY_Endpoint_Enable_Audio_Inject_MFX: When value is 0x00000001, Audio Inject global effect is enabled
 // {A44531EF-5377-4944-AE15-53789A9629C7},5
 // vartype = VT_UI4
-DEFINE_PROPERTYKEY(PKEY_Endpoint_Enable_Delay_MFX, 0xa44531ef, 0x5377, 0x4944, 0xae, 0x15, 0x53, 0x78, 0x9a, 0x96, 0x29, 0xc7, 5);
+DEFINE_PROPERTYKEY(PKEY_Endpoint_Enable_Audio_Inject_MFX, 0xa44531ef, 0x5377, 0x4944, 0xae, 0x15, 0x53, 0x78, 0x9a, 0x96, 0x29, 0xc7, 5);
