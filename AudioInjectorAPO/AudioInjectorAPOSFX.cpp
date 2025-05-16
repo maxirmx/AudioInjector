@@ -19,7 +19,7 @@
 #include <float.h>
 
 #include "AudioInjectorAPO.h"
-#include <devicetopology.h>
+//#include <devicetopology.h>
 #include <CustomPropKeys.h>
 
 #include "APOLogger.h"
@@ -205,9 +205,12 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
 STDMETHODIMP CAudioInjectorAPOSFX::GetLatency(HNSTIME* pTime)
 {
     ASSERT_NONREALTIME();
-    HRESULT hr = S_OK;
 
-    IF_TRUE_ACTION_JUMP(NULL == pTime, hr = E_POINTER, Exit);
+    if (NULL == pTime)
+    {
+        return E_POINTER;
+    }
+
     if (IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
     {
         *pTime = 0;
@@ -218,8 +221,7 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetLatency(HNSTIME* pTime)
         *pTime = 0;
     }
 
-Exit:
-    return hr;
+    return S_OK;
 }
 
 //-------------------------------------------------------------------------
@@ -246,11 +248,13 @@ STDMETHODIMP CAudioInjectorAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
     UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
     ASSERT_NONREALTIME();
-    HRESULT hr = S_OK;
 
-    hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
+    HRESULT hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
-    IF_FAILED_JUMP(hr, Exit);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
 
     if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
     {
@@ -266,7 +270,8 @@ STDMETHODIMP CAudioInjectorAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
             hr = S_OK;  // Don't fail the whole APO initialization
         }
         else
-        {            // Resample audio to match the APO format if needed
+        {
+            // Resample audio to match the APO format if needed
             hr = m_pAudioFileReader->ResampleAudio((UINT32)GetFramesPerSecond(), GetSamplesPerFrame());
             if (FAILED(hr))
             {
@@ -279,7 +284,6 @@ STDMETHODIMP CAudioInjectorAPOSFX::LockForProcess(UINT32 u32NumInputConnections,
         }
     }
 
-Exit:
     return hr;
 }
 
@@ -350,8 +354,16 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     HRESULT                     hr = S_OK;
     GUID                        processingMode;
 
-    IF_TRUE_ACTION_JUMP( ((NULL == pbyData) && (0 != cbDataSize)), hr = E_INVALIDARG, Exit);
-    IF_TRUE_ACTION_JUMP( ((NULL != pbyData) && (0 == cbDataSize)), hr = E_INVALIDARG, Exit);
+    // Parameter validation
+    if ((NULL == pbyData) && (0 != cbDataSize))
+    {
+        return E_INVALIDARG;
+    }
+
+    if ((NULL != pbyData) && (0 == cbDataSize))
+    {
+        return E_INVALIDARG;
+    }
 
     if (cbDataSize == sizeof(APOInitSystemEffects2))
     {
@@ -366,7 +378,10 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 
         // Windows should pass a valid collection.
         ATLASSERT(papoSysFxInit2->pDeviceCollection != nullptr);
-        IF_TRUE_ACTION_JUMP(papoSysFxInit2->pDeviceCollection == nullptr, hr = E_INVALIDARG, Exit);
+        if (papoSysFxInit2->pDeviceCollection == nullptr)
+        {
+            return E_INVALIDARG;
+        }
 
         // Save the processing mode being initialized.
         processingMode = papoSysFxInit2->AudioProcessingMode;
@@ -389,20 +404,23 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     else
     {
         // Invalid initialization size
-        hr = E_INVALIDARG;
-        goto Exit;
+        return E_INVALIDARG;
     }
 
     // Validate then save the processing mode. Note an endpoint effects APO
     // does not depend on the mode. Windows sets the APOInitSystemEffects2
     // AudioProcessingMode member to GUID_NULL for an endpoint effects APO.
-    IF_TRUE_ACTION_JUMP((processingMode != AUDIO_SIGNALPROCESSINGMODE_DEFAULT        &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_RAW            &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_COMMUNICATIONS &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_SPEECH         &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_MEDIA          &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_MOVIE          &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_NOTIFICATION), hr = E_INVALIDARG, Exit);
+    if (processingMode != AUDIO_SIGNALPROCESSINGMODE_DEFAULT        &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_RAW            &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_COMMUNICATIONS &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_SPEECH         &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_MEDIA          &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_MOVIE          &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_NOTIFICATION)
+    {
+        return E_INVALIDARG;
+    }
+
     m_AudioProcessingMode = processingMode;
 
     //
@@ -460,21 +478,22 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
             }
             PropVariantClear(&var);
         }
-    }
-
-    //
+    }    //
     //  Register for notification of registry updates
     //
     hr = m_spEnumerator.CoCreateInstance(__uuidof(MMDeviceEnumerator));
-    IF_FAILED_JUMP(hr, Exit);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
 
     hr = m_spEnumerator->RegisterEndpointNotificationCallback(this);
-    IF_FAILED_JUMP(hr, Exit);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
 
-     m_bIsInitialized = true;
-
-
-Exit:
+    m_bIsInitialized = true;
     return hr;
 }
 
@@ -511,12 +530,20 @@ Exit:
 //
 STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     BOOL effectsLocked = FALSE;
     UINT cEffects = 0;
 
-    IF_TRUE_ACTION_JUMP(ppEffectsIds == NULL, hr = E_POINTER, Exit);
-    IF_TRUE_ACTION_JUMP(pcEffects == NULL, hr = E_POINTER, Exit);
+    // Parameter validation
+    if (ppEffectsIds == NULL)
+    {
+        return E_POINTER;
+    }
+
+    if (pcEffects == NULL)
+    {
+        return E_POINTER;
+    }
 
     // Synchronize access to the effects list and effects changed event
     m_EffectsLock.Enter();
@@ -535,7 +562,9 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenul
         if (!DuplicateHandle(GetCurrentProcess(), Event, GetCurrentProcess(), &m_hEffectsChangedEvent, EVENT_MODIFY_STATE, FALSE, 0))
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
-            goto Exit;
+            // Clean up and return error
+            m_EffectsLock.Leave();
+            return hr;
         }
     }
 
@@ -569,12 +598,12 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenul
             *pcEffects = 0;
         }
         else
-        {
-            GUID *pEffectsIds = (LPGUID)CoTaskMemAlloc(sizeof(GUID) * cEffects);
+        {            GUID *pEffectsIds = (LPGUID)CoTaskMemAlloc(sizeof(GUID) * cEffects);
             if (pEffectsIds == nullptr)
             {
-                hr = E_OUTOFMEMORY;
-                goto Exit;
+                // Clean up and return out of memory error
+                m_EffectsLock.Leave();
+                return E_OUTOFMEMORY;
             }
 
             // pick up the active effects
@@ -594,7 +623,7 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenul
         hr = S_OK;
     }
 
-Exit:
+    // Always release the lock before returning
     if (effectsLocked)
     {
         m_EffectsLock.Leave();

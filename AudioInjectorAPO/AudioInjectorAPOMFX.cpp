@@ -253,9 +253,12 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
 STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)
 {
     ASSERT_NONREALTIME();
-    HRESULT hr = S_OK;
-
-    IF_TRUE_ACTION_JUMP(NULL == pTime, hr = E_POINTER, Exit);
+    
+    if (NULL == pTime)
+    {
+        return E_POINTER;
+    }
+    
     if (IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
     {
         *pTime = 0;
@@ -265,8 +268,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)
         *pTime = (m_bEnableAudioMix ? 0 : 0); // No latency for audio mixing
     }
 
-Exit:
-    return hr;
+    return S_OK;
 }
 
 //-------------------------------------------------------------------------
@@ -293,9 +295,17 @@ STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
     UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
     ASSERT_NONREALTIME();
-    HRESULT hr = S_OK;    hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
+    HRESULT hr = S_OK;
+    
+    hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
-    IF_FAILED_JUMP(hr, Exit);    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
+    
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+    
+    if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
     {
         // Create and initialize audio file reader
         m_pAudioFileReader = std::make_unique<AudioFileReader>();
@@ -323,7 +333,6 @@ STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
         }
     }
 
-Exit:
     return hr;
 }
 
@@ -394,8 +403,16 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     HRESULT                     hr = S_OK;
     GUID                        processingMode;
 
-    IF_TRUE_ACTION_JUMP( ((NULL == pbyData) && (0 != cbDataSize)), hr = E_INVALIDARG, Exit);
-    IF_TRUE_ACTION_JUMP( ((NULL != pbyData) && (0 == cbDataSize)), hr = E_INVALIDARG, Exit);
+    // Parameter validation
+    if ((NULL == pbyData) && (0 != cbDataSize))
+    {
+        return E_INVALIDARG;
+    }
+    
+    if ((NULL != pbyData) && (0 == cbDataSize))
+    {
+        return E_INVALIDARG;
+    }
 
     if (cbDataSize == sizeof(APOInitSystemEffects2))
     {
@@ -410,7 +427,10 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 
         // Windows should pass a valid collection.
         ATLASSERT(papoSysFxInit2->pDeviceCollection != nullptr);
-        IF_TRUE_ACTION_JUMP(papoSysFxInit2->pDeviceCollection == nullptr, hr = E_INVALIDARG, Exit);
+        if (papoSysFxInit2->pDeviceCollection == nullptr)
+        {
+            return E_INVALIDARG;
+        }
 
         // Save the processing mode being initialized.
         processingMode = papoSysFxInit2->AudioProcessingMode;
@@ -428,24 +448,26 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 
         // Assume default processing mode
         processingMode = AUDIO_SIGNALPROCESSINGMODE_DEFAULT;
-    }
-    else
+    }    else
     {
         // Invalid initialization size
-        hr = E_INVALIDARG;
-        goto Exit;
+        return E_INVALIDARG;
     }
 
     // Validate then save the processing mode. Note an endpoint effects APO
     // does not depend on the mode. Windows sets the APOInitSystemEffects2
     // AudioProcessingMode member to GUID_NULL for an endpoint effects APO.
-    IF_TRUE_ACTION_JUMP((processingMode != AUDIO_SIGNALPROCESSINGMODE_DEFAULT        &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_RAW            &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_COMMUNICATIONS &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_SPEECH         &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_MEDIA          &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_MOVIE          &&
-                         processingMode != AUDIO_SIGNALPROCESSINGMODE_NOTIFICATION), hr = E_INVALIDARG, Exit);
+    if (processingMode != AUDIO_SIGNALPROCESSINGMODE_DEFAULT        &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_RAW            &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_COMMUNICATIONS &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_SPEECH         &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_MEDIA          &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_MOVIE          &&
+        processingMode != AUDIO_SIGNALPROCESSINGMODE_NOTIFICATION)
+    {
+        return E_INVALIDARG;
+    }
+    
     m_AudioProcessingMode = processingMode;
 
     //
@@ -503,19 +525,22 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
             }
             PropVariantClear(&var);
         }
-    }
-
-    //
+    }    //
     //  Register for notification of registry updates
     //
     hr = m_spEnumerator.CoCreateInstance(__uuidof(MMDeviceEnumerator));
-    IF_FAILED_JUMP(hr, Exit);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
 
     hr = m_spEnumerator->RegisterEndpointNotificationCallback(this);
-    IF_FAILED_JUMP(hr, Exit);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
 
     m_bIsInitialized = true;
-Exit:
     return hr;
 }
 
@@ -552,12 +577,20 @@ Exit:
 //
 STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffects) LPGUID *ppEffectsIds, _Out_ UINT *pcEffects, _In_ HANDLE Event)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     BOOL effectsLocked = FALSE;
     UINT cEffects = 0;
 
-    IF_TRUE_ACTION_JUMP(ppEffectsIds == NULL, hr = E_POINTER, Exit);
-    IF_TRUE_ACTION_JUMP(pcEffects == NULL, hr = E_POINTER, Exit);
+    // Parameter validation
+    if (ppEffectsIds == NULL)
+    {
+        return E_POINTER;
+    }
+    
+    if (pcEffects == NULL)
+    {
+        return E_POINTER;
+    }
 
     // Synchronize access to the effects list and effects changed event
     m_EffectsLock.Enter();
@@ -576,7 +609,9 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
         if (!DuplicateHandle(GetCurrentProcess(), Event, GetCurrentProcess(), &m_hEffectsChangedEvent, EVENT_MODIFY_STATE, FALSE, 0))
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
-            goto Exit;
+            // Clean up and return error
+            m_EffectsLock.Leave();
+            return hr;
         }
     }
 
@@ -610,12 +645,12 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
             *pcEffects = 0;
         }
         else
-        {
-            GUID *pEffectsIds = (LPGUID)CoTaskMemAlloc(sizeof(GUID) * cEffects);
+        {            GUID *pEffectsIds = (LPGUID)CoTaskMemAlloc(sizeof(GUID) * cEffects);
             if (pEffectsIds == nullptr)
             {
-                hr = E_OUTOFMEMORY;
-                goto Exit;
+                // Clean up and return out of memory error
+                m_EffectsLock.Leave();
+                return E_OUTOFMEMORY;
             }
 
             // pick up the active effects
@@ -635,7 +670,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
         hr = S_OK;
     }
 
-Exit:
+    // Always release the lock before returning
     if (effectsLocked)
     {
         m_EffectsLock.Leave();
@@ -877,7 +912,7 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
                 APO_CONNECTION_DESCRIPTOR** ppOutputConnections)
 {
     ASSERT_NONREALTIME();
-    HRESULT hResult;
+    HRESULT hResult = S_OK;
     CComPtr<IAudioMediaType> pFormat;
     UNCOMPRESSEDAUDIOFORMAT UncompInputFormat, UncompOutputFormat;
     FLOAT32 f32InverseChannelCount;
@@ -893,10 +928,18 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
 
     // get the uncompressed formats and channel masks
     hResult = ppInputConnections[0]->pFormat->GetUncompressedAudioFormat(&UncompInputFormat);
-    IF_FAILED_JUMP(hResult, Exit);
+    if (FAILED(hResult))
+    {
+        LeaveCriticalSection(&m_CritSec);
+        return hResult;
+    }
 
     hResult = ppOutputConnections[0]->pFormat->GetUncompressedAudioFormat(&UncompOutputFormat);
-    IF_FAILED_JUMP(hResult, Exit);
+    if (FAILED(hResult))
+    {
+        LeaveCriticalSection(&m_CritSec);
+        return hResult;
+    }
 
     // Since we haven't overridden the IsIn{Out}putFormatSupported APIs in this example, this APO should
     // always have input channel count == output channel count.  The sampling rates should also be eqaul,
@@ -906,7 +949,11 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
 
     // Allocate some locked memory.  We will use these as scaling coefficients during APOProcess->ProcessDelayScale
     hResult = AERT_Allocate(sizeof(FLOAT32)*m_u32SamplesPerFrame, (void**)&m_pf32Coefficients);
-    IF_FAILED_JUMP(hResult, Exit);
+    if (FAILED(hResult))
+    {
+        LeaveCriticalSection(&m_CritSec);
+        return hResult;
+    }
 
     // Set scalars to decrease volume from 1.0 to 1.0/N where N is the number of channels
     // starting with the first channel.
@@ -916,8 +963,6 @@ HRESULT CAudioInjectorAPOMFX::ValidateAndCacheConnectionInfo(UINT32 u32NumInputC
         m_pf32Coefficients[u32Index] = 1.0f - (FLOAT32)(f32InverseChannelCount)*u32Index;
     }
 
-
-Exit:
     LeaveCriticalSection(&m_CritSec);
     return hResult;}
 
@@ -1013,19 +1058,22 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormat
     IAudioMediaType** ppFormat
 )
 {
-    HRESULT hr;
-
-    IF_TRUE_ACTION_JUMP((nFormat >= _cCustomFormats), hr = E_INVALIDARG, Exit);
-    IF_TRUE_ACTION_JUMP((ppFormat == NULL), hr = E_POINTER, Exit);
+    // Parameter validation
+    if (nFormat >= _cCustomFormats)
+    {
+        return E_INVALIDARG;
+    }
+    
+    if (ppFormat == NULL)
+    {
+        return E_POINTER;
+    }
 
     *ppFormat = NULL;
 
-    hr = CreateAudioMediaType(  (const WAVEFORMATEX*)&_rgCustomFormats[nFormat].wfxFmt,
-                                sizeof(_rgCustomFormats[nFormat].wfxFmt),
-                                ppFormat);
-
-Exit:
-    return hr;
+    return CreateAudioMediaType((const WAVEFORMATEX*)&_rgCustomFormats[nFormat].wfxFmt,
+                               sizeof(_rgCustomFormats[nFormat].wfxFmt),
+                               ppFormat);
 }
 
 //-------------------------------------------------------------------------
@@ -1057,26 +1105,34 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormatRepresentation
     size_t  cbRep;
     LPWSTR  pwstrLocal;
 
-    IF_TRUE_ACTION_JUMP((nFormat >= _cCustomFormats), hr = E_INVALIDARG, Exit);
-    IF_TRUE_ACTION_JUMP((ppwstrFormatRep == NULL), hr = E_POINTER, Exit);
+    // Parameter validation
+    if (nFormat >= _cCustomFormats)
+    {
+        return E_INVALIDARG;
+    }
+    
+    if (ppwstrFormatRep == NULL)
+    {
+        return E_POINTER;
+    }
 
     cbRep = (wcslen(_rgCustomFormats[nFormat].pwszRep) + 1) * sizeof(WCHAR);
 
     pwstrLocal = (LPWSTR)CoTaskMemAlloc(cbRep);
-    IF_TRUE_ACTION_JUMP((pwstrLocal == NULL), hr = E_OUTOFMEMORY, Exit);
+    if (pwstrLocal == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     hr = StringCbCopyW(pwstrLocal, cbRep, _rgCustomFormats[nFormat].pwszRep);
     if (FAILED(hr))
     {
         CoTaskMemFree(pwstrLocal);
+        return hr;
     }
-    else
-    {
-        *ppwstrFormatRep = pwstrLocal;
-    }
-
-Exit:
-    return hr;
+    
+    *ppwstrFormatRep = pwstrLocal;
+    return S_OK;
 }
 
 //-------------------------------------------------------------------------
@@ -1112,14 +1168,26 @@ STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
     UNCOMPRESSEDAUDIOFORMAT uncompOutputFormat;
     IAudioMediaType *recommendedFormat = NULL;
 
-    IF_TRUE_ACTION_JUMP((NULL == pRequestedOutputFormat) || (NULL == ppSupportedOutputFormat), hResult = E_POINTER, Exit);
+    // Parameter validation
+    if ((NULL == pRequestedOutputFormat) || (NULL == ppSupportedOutputFormat))
+    {
+        return E_POINTER;
+    }
+    
     *ppSupportedOutputFormat = NULL;
 
     // Initial comparison to make sure the requested format is valid and consistent with the input
     // format. Because of the APO flags specified during creation, the samples per frame value will
     // not be validated.
     hResult = IsFormatTypeSupported(pInputFormat, pRequestedOutputFormat, &recommendedFormat, true);
-    IF_FAILED_JUMP(hResult, Exit);
+    if (FAILED(hResult))
+    {
+        if (recommendedFormat)
+        {
+            recommendedFormat->Release();
+        }
+        return hResult;
+    }
 
     // Check to see if a custom format from the APO was used.
     if (S_FALSE == hResult)
@@ -1136,7 +1204,14 @@ STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
     // now retrieve the format that IsFormatTypeSupported decided on, building upon that by adding
     // our channel count constraint.
     hResult = recommendedFormat->GetUncompressedAudioFormat(&uncompOutputFormat);
-    IF_FAILED_JUMP(hResult, Exit);
+    if (FAILED(hResult))
+    {
+        if (recommendedFormat)
+        {
+            recommendedFormat->Release();
+        }
+        return hResult;
+    }
 
     // If the requested format exactly matched our requirements,
     // just return it.
@@ -1149,11 +1224,18 @@ STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
     else // we're proposing something different, copy it and return S_FALSE
     {
         hResult = CreateAudioMediaTypeFromUncompressedAudioFormat(&uncompOutputFormat, ppSupportedOutputFormat);
-        IF_FAILED_JUMP(hResult, Exit);
+        if (FAILED(hResult))
+        {
+            if (recommendedFormat)
+            {
+                recommendedFormat->Release();
+            }
+            return hResult;
+        }
         hResult = S_FALSE;
     }
 
-Exit:
+    // Clean up before returning
     if (recommendedFormat)
     {
         recommendedFormat->Release();

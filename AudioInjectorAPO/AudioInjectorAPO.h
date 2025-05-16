@@ -14,7 +14,7 @@
 #include <AudioInjectorAPODll.h>
 #include <resource.h>
 
-#include <commonmacros.h>
+//#include <commonmacros.h>
 #include <devicetopology.h>
 #include <memory>
 #include <string>
@@ -32,7 +32,7 @@ _Analysis_mode_(_Analysis_code_type_user_driver_)
 // truly very different from all predefined types of effects.
 //
 
-// {DE5E2F27-3A3E-486D-B038-AC4401A774D7}
+// {2EC92F27-3A3E-486D-B038-AC4401A774D7}
 DEFINE_GUID(InjectEffectId,     0x2EC92F27, 0x3A3E, 0x486D, 0xB0, 0x38, 0xAC, 0x44, 0x01, 0xA7, 0x74, 0xD7);
 
 // Default audio mix ratio (50%)
