@@ -688,7 +688,9 @@ HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
         {
             SetEvent(m_hEffectsChangedEvent);
         }        m_EffectsLock.Leave();
-    }    // If any of our relevant properties change, reevaluate whether we should enable mixing
+    }
+
+    // If any of our relevant properties change, reevaluate whether we should enable mixing
     if (PK_EQUAL(key, PKEY_AudioMix_FilePath) ||
         PK_EQUAL(key, PKEY_AudioMix_DeviceName) ||
         PK_EQUAL(key, PKEY_Endpoint_Enable_Audio_Inject_SFX) ||
