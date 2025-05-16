@@ -65,6 +65,8 @@ public:    // constructor
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
+    ,   m_audioDeviceName()
+    ,   m_autoStopOnFileEnd(true)
     {
         m_pf32Coefficients = NULL;
     }
@@ -160,12 +162,12 @@ public:
     FLOAT32                                 m_mixRatio;
     UINT32                                  m_fileIndex;
     std::wstring                            m_audioFilePath;
+    std::wstring                            m_audioDeviceName;  // Name of audio device to use for capture
+    bool                                    m_autoStopOnFileEnd;  // Whether to stop mixing when file ends
 
 private:
     CCriticalSection                        m_EffectsLock;
     HANDLE                                  m_hEffectsChangedEvent;
-
-    HRESULT ProprietaryCommunicationWithDriver(APOInitSystemEffects2 *_pAPOSysFxInit2);
 
 };
 #pragma AVRT_VTABLES_END
@@ -190,6 +192,8 @@ public:    // constructor
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
+    ,   m_audioDeviceName()
+    ,   m_autoStopOnFileEnd(true)
     {
     }
 
@@ -266,6 +270,8 @@ public:
     FLOAT32                                 m_mixRatio;
     UINT32                                  m_fileIndex;
     std::wstring                            m_audioFilePath;
+    std::wstring                            m_audioDeviceName;  // Name of audio device to use for capture
+    bool                                    m_autoStopOnFileEnd;  // Whether to stop mixing when file ends
 };
 #pragma AVRT_VTABLES_END
 

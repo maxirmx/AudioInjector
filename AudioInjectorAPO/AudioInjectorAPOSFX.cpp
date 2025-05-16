@@ -119,9 +119,7 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
                 WriteSilence( pf32InputFrames,
                               ppInputConnections[0]->u32ValidFrameCount,
                               GetSamplesPerFrame() );
-            }
-
-            // Process with audio mixing if enabled
+            }            // Process with audio mixing if enabled
             if (
                 !IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) &&
                 m_bEnableAudioMix &&
@@ -129,6 +127,9 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
                 m_pAudioFileReader->IsValid()
             )
             {
+                // Save the current file position
+                UINT32 previousFileIndex = m_fileIndex;
+
                 // Mix the audio file with the input stream
                 ProcessAudioMix(
                     pf32OutputFrames,
@@ -142,6 +143,21 @@ STDMETHODIMP_(void) CAudioInjectorAPOSFX::APOProcess(
 
                 // we don't try to remember silence
                 ppOutputConnections[0]->u32BufferFlags = BUFFER_VALID;
+
+                // Check if we've played the whole file and need to auto-stop
+                if (m_autoStopOnFileEnd && previousFileIndex > m_fileIndex)
+                {
+                    // File has looped back to the beginning, disable mixing
+                    m_bEnableAudioMix = FALSE;
+
+                    // Signal that effects have changed
+                    m_EffectsLock.Enter();
+                    if (m_hEffectsChangedEvent != NULL)
+                    {
+                        SetEvent(m_hEffectsChangedEvent);
+                    }
+                    m_EffectsLock.Leave();
+                }
             }
             else
             {
@@ -332,9 +348,6 @@ Exit:
 HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
 {
     HRESULT                     hr = S_OK;
-    CComPtr<IMMDevice>	        spMyDevice;
-    CComPtr<IDeviceTopology>    spMyDeviceTopology;
-    CComPtr<IConnector>         spMyConnector;
     GUID                        processingMode;
 
     IF_TRUE_ACTION_JUMP( ((NULL == pbyData) && (0 != cbDataSize)), hr = E_INVALIDARG, Exit);
@@ -354,18 +367,6 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
         // Windows should pass a valid collection.
         ATLASSERT(papoSysFxInit2->pDeviceCollection != nullptr);
         IF_TRUE_ACTION_JUMP(papoSysFxInit2->pDeviceCollection == nullptr, hr = E_INVALIDARG, Exit);
-
-        // Get the IDeviceTopology and IConnector interfaces to communicate with this
-        // APO's counterpart audio driver. This can be used for any proprietary
-        // communication.
-        hr = papoSysFxInit2->pDeviceCollection->Item(papoSysFxInit2->nSoftwareIoDeviceInCollection, &spMyDevice);
-        IF_FAILED_JUMP(hr, Exit);
-
-        hr = spMyDevice->Activate(__uuidof(IDeviceTopology), CLSCTX_ALL, NULL, (void**)&spMyDeviceTopology);
-        IF_FAILED_JUMP(hr, Exit);
-
-        hr = spMyDeviceTopology->GetConnector(papoSysFxInit2->nSoftwareIoConnectorIndex, &spMyConnector);
-        IF_FAILED_JUMP(hr, Exit);
 
         // Save the processing mode being initialized.
         processingMode = papoSysFxInit2->AudioProcessingMode;
@@ -416,7 +417,8 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     //
     if (m_spAPOSystemEffectsProperties != NULL)
     {
-        m_bEnableAudioMix = GetCurrentEffectsSetting(m_spAPOSystemEffectsProperties, PKEY_Endpoint_Enable_Audio_Inject_SFX, m_AudioProcessingMode);
+        // Default to disabled - will be enabled only when valid parameters are set
+        m_bEnableAudioMix = FALSE;
 
         // Try to read custom audio file path from properties (if available)
         CComPtr<IPropertyStore> spProperties = m_spAPOSystemEffectsProperties;
@@ -426,18 +428,28 @@ HRESULT CAudioInjectorAPOSFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
             PropVariantInit(&var);
 
             // Check if we have a custom audio file path property
-            PROPERTYKEY PKEY_AudioMix_FilePath = { 0x9f79cc99, 0x23ea, 0x4997, { 0x9d, 0x60, 0xf5, 0xe2, 0x2c, 0x1f, 0xd8, 0x45 }, 0 };
-
             if (SUCCEEDED(spProperties->GetValue(PKEY_AudioMix_FilePath, &var)) && var.vt == VT_LPWSTR && var.pwszVal != nullptr)
             {
                 m_audioFilePath = var.pwszVal;
             }
+            PropVariantClear(&var);
 
+            // Check if we have a custom device name
+            PropVariantInit(&var);
+            if (SUCCEEDED(spProperties->GetValue(PKEY_AudioMix_DeviceName, &var)) && var.vt == VT_LPWSTR)
+            {
+                if (var.pwszVal != nullptr)
+                {
+                    m_audioDeviceName = var.pwszVal;
+                }
+                else
+                {
+                    m_audioDeviceName.clear(); // Use default device
+                }
+            }
             PropVariantClear(&var);
 
             // Check if we have a custom mix ratio property
-            PROPERTYKEY PKEY_AudioMix_Ratio = { 0x9f79cc99, 0x23ea, 0x4997, { 0x9d, 0x60, 0xf5, 0xe2, 0x2c, 0x1f, 0xd8, 0x45 }, 1 };
-
             PropVariantInit(&var);
             if (SUCCEEDED(spProperties->GetValue(PKEY_AudioMix_Ratio, &var)) && var.vt == VT_R4)
             {
@@ -655,40 +667,100 @@ HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, cons
         {
             SetEvent(m_hEffectsChangedEvent);
         }        m_EffectsLock.Leave();
-    }
-
-    // Check for changes to our custom properties
-    PROPERTYKEY PKEY_AudioMix_FilePath = { 0x9f79cc99, 0x23ea, 0x4997, { 0x9d, 0x60, 0xf5, 0xe2, 0x2c, 0x1f, 0xd8, 0x45 }, 0 };
-    PROPERTYKEY PKEY_AudioMix_Ratio = { 0x9f79cc99, 0x23ea, 0x4997, { 0x9d, 0x60, 0xf5, 0xe2, 0x2c, 0x1f, 0xd8, 0x45 }, 1 };
-
-    if (PK_EQUAL(key, PKEY_AudioMix_FilePath) && m_spAPOSystemEffectsProperties)
+    }    // If any of our relevant properties change, reevaluate whether we should enable mixing
+    if (PK_EQUAL(key, PKEY_AudioMix_FilePath) ||
+        PK_EQUAL(key, PKEY_AudioMix_DeviceName) ||
+        PK_EQUAL(key, PKEY_Endpoint_Enable_Audio_Inject_SFX) ||
+        PK_EQUAL(key, PKEY_AudioEndpoint_Disable_SysFx))
     {
-        // Audio file path has changed
-        PROPVARIANT var;
-        PropVariantInit(&var);
+        // Update file path if it changed
+        if (PK_EQUAL(key, PKEY_AudioMix_FilePath))
+        {
+            PROPVARIANT var;
+            PropVariantInit(&var);
 
-        if (SUCCEEDED(m_spAPOSystemEffectsProperties->GetValue(PKEY_AudioMix_FilePath, &var)) &&
-            var.vt == VT_LPWSTR &&
-            var.pwszVal != nullptr)
-        {            // Store the new file path
-            m_audioFilePath = var.pwszVal;
+            if (SUCCEEDED(m_spAPOSystemEffectsProperties->GetValue(PKEY_AudioMix_FilePath, &var)) && var.vt == VT_LPWSTR)
+            {
+                // Store the new file path
+                if (var.pwszVal != nullptr)
+                {
+                    m_audioFilePath = var.pwszVal;
+                }
+                else
+                {
+                    m_audioFilePath.clear();
+                }
+            }
+            PropVariantClear(&var);
+        }
 
-            // If we're currently locked for processing, reload the audio file
-            if (m_bIsLocked && m_bEnableAudioMix)
+        // Update device name if it changed
+        if (PK_EQUAL(key, PKEY_AudioMix_DeviceName))
+        {
+            PROPVARIANT var;
+            PropVariantInit(&var);
+
+            if (SUCCEEDED(m_spAPOSystemEffectsProperties->GetValue(PKEY_AudioMix_DeviceName, &var)) && var.vt == VT_LPWSTR)
+            {
+                // Store the new device name
+                if (var.pwszVal != nullptr)
+                {
+                    m_audioDeviceName = var.pwszVal;
+                }
+                else
+                {
+                    m_audioDeviceName.clear(); // Use default device
+                }
+            }
+            PropVariantClear(&var);
+        }
+
+        // Determine if we should enable mixing
+        // Only enable if we have a valid file path
+        LONG masterEnableState = GetCurrentEffectsSetting(
+            m_spAPOSystemEffectsProperties,
+            PKEY_Endpoint_Enable_Audio_Inject_SFX,
+            m_AudioProcessingMode);
+
+        LONG oldEnableState = m_bEnableAudioMix;
+
+        // Only enable when the master switch is on AND we have a valid file path
+        m_bEnableAudioMix = masterEnableState && !m_audioFilePath.empty();
+
+        // If the enable state changed, notify via the effects changed event
+        if (oldEnableState != m_bEnableAudioMix)
+        {
+            m_EffectsLock.Enter();
+            if (m_hEffectsChangedEvent != NULL)
+            {
+                SetEvent(m_hEffectsChangedEvent);
+            }
+            m_EffectsLock.Leave();
+
+            // If newly enabled and we're locked, initialize the audio file reader
+            if (m_bEnableAudioMix && m_bIsLocked)
             {
                 // Create a new reader with the updated path
                 std::unique_ptr<AudioFileReader> newReader = std::make_unique<AudioFileReader>();
-                  if (SUCCEEDED(newReader->Initialize(m_audioFilePath.c_str())) &&
+                if (SUCCEEDED(newReader->Initialize(m_audioFilePath.c_str())) &&
                     SUCCEEDED(newReader->ResampleAudio((UINT32)GetFramesPerSecond(), GetSamplesPerFrame())))
                 {
                     // Swap in the new reader
                     m_pAudioFileReader = std::move(newReader);
                     m_fileIndex = 0;
                 }
+                else
+                {
+                    // Failed to load audio file, disable mixing
+                    m_bEnableAudioMix = FALSE;
+
+                    if (m_hEffectsChangedEvent != NULL)
+                    {
+                        SetEvent(m_hEffectsChangedEvent);
+                    }
+                }
             }
         }
-
-        PropVariantClear(&var);
     }
     else if (PK_EQUAL(key, PKEY_AudioMix_Ratio) && m_spAPOSystemEffectsProperties)
     {
