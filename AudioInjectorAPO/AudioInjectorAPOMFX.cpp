@@ -253,21 +253,13 @@ STDMETHODIMP_(void) CAudioInjectorAPOMFX::APOProcess(
 STDMETHODIMP CAudioInjectorAPOMFX::GetLatency(HNSTIME* pTime)
 {
     ASSERT_NONREALTIME();
-    
+
     if (NULL == pTime)
     {
         return E_POINTER;
     }
-    
-    if (IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
-    {
-        *pTime = 0;
-    }
-    else
-    {
-        *pTime = (m_bEnableAudioMix ? 0 : 0); // No latency for audio mixing
-    }
 
+    *pTime = 0;
     return S_OK;
 }
 
@@ -296,15 +288,15 @@ STDMETHODIMP CAudioInjectorAPOMFX::LockForProcess(UINT32 u32NumInputConnections,
 {
     ASSERT_NONREALTIME();
     HRESULT hr = S_OK;
-    
+
     hr = CBaseAudioProcessingObject::LockForProcess(u32NumInputConnections,
         ppInputConnections, u32NumOutputConnections, ppOutputConnections);
-    
+
     if (FAILED(hr))
     {
         return hr;
     }
-    
+
     if (!IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW) && m_bEnableAudioMix)
     {
         // Create and initialize audio file reader
@@ -408,7 +400,7 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     {
         return E_INVALIDARG;
     }
-    
+
     if ((NULL != pbyData) && (0 == cbDataSize))
     {
         return E_INVALIDARG;
@@ -467,7 +459,7 @@ HRESULT CAudioInjectorAPOMFX::Initialize(UINT32 cbDataSize, BYTE* pbyData)
     {
         return E_INVALIDARG;
     }
-    
+
     m_AudioProcessingMode = processingMode;
 
     //
@@ -586,7 +578,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetEffectsList(_Outptr_result_buffer_maybenul
     {
         return E_POINTER;
     }
-    
+
     if (pcEffects == NULL)
     {
         return E_POINTER;
@@ -1063,7 +1055,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormat
     {
         return E_INVALIDARG;
     }
-    
+
     if (ppFormat == NULL)
     {
         return E_POINTER;
@@ -1110,7 +1102,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormatRepresentation
     {
         return E_INVALIDARG;
     }
-    
+
     if (ppwstrFormatRep == NULL)
     {
         return E_POINTER;
@@ -1130,7 +1122,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::GetFormatRepresentation
         CoTaskMemFree(pwstrLocal);
         return hr;
     }
-    
+
     *ppwstrFormatRep = pwstrLocal;
     return S_OK;
 }
@@ -1173,7 +1165,7 @@ STDMETHODIMP CAudioInjectorAPOMFX::IsOutputFormatSupported
     {
         return E_POINTER;
     }
-    
+
     *ppSupportedOutputFormat = NULL;
 
     // Initial comparison to make sure the requested format is valid and consistent with the input

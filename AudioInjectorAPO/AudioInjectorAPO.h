@@ -14,7 +14,6 @@
 #include <AudioInjectorAPODll.h>
 #include <resource.h>
 
-//#include <commonmacros.h>
 #include <devicetopology.h>
 #include <memory>
 #include <string>

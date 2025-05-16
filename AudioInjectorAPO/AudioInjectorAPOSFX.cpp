@@ -211,16 +211,8 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetLatency(HNSTIME* pTime)
         return E_POINTER;
     }
 
-    if (IsEqualGUID(m_AudioProcessingMode, AUDIO_SIGNALPROCESSINGMODE_RAW))
-    {
-        *pTime = 0;
-    }
-    else
-    {
-        // No delay is added when mixing audio
-        *pTime = 0;
-    }
-
+    // No delay is added when mixing audio
+    *pTime = 0;
     return S_OK;
 }
 
