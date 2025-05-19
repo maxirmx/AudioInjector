@@ -7,6 +7,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioInjectorAPO", "AudioIn
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioInjectorAPOUnitTests", "AudioInjectorAPOUnitTests\AudioInjectorAPOUnitTests.vcxproj", "{1B9305CE-C279-C668-5DF6-5B4E983CCB7A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioInjectorClient", "AudioInjectorClient\AudioInjectorClient.vcxproj", "{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8851AB85-70B3-4798-A149-BA366DF9EC25} = {8851AB85-70B3-4798-A149-BA366DF9EC25}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioInjectorTest", "AudioInjectorTest\AudioInjectorTest.vcxproj", "{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -31,6 +38,22 @@ Global
 		{1B9305CE-C279-C668-5DF6-5B4E983CCB7A}.Release|ARM64.Build.0 = Release|x64
 		{1B9305CE-C279-C668-5DF6-5B4E983CCB7A}.Release|x64.ActiveCfg = Release|x64
 		{1B9305CE-C279-C668-5DF6-5B4E983CCB7A}.Release|x64.Build.0 = Release|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Debug|ARM64.ActiveCfg = Debug|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Debug|ARM64.Build.0 = Debug|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Debug|x64.ActiveCfg = Debug|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Debug|x64.Build.0 = Debug|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Release|ARM64.ActiveCfg = Release|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Release|ARM64.Build.0 = Release|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Release|x64.ActiveCfg = Release|x64
+		{701B4125-9EBD-4F33-A7DC-8FC647A15FAD}.Release|x64.Build.0 = Release|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Debug|ARM64.ActiveCfg = Debug|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Debug|ARM64.Build.0 = Debug|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Debug|x64.ActiveCfg = Debug|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Debug|x64.Build.0 = Debug|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Release|ARM64.ActiveCfg = Release|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Release|ARM64.Build.0 = Release|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Release|x64.ActiveCfg = Release|x64
+		{9F2D7125-4D31-493C-A8AF-8FCDFDA15FAD}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
