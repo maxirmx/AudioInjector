@@ -14,7 +14,6 @@
 #include <AudioInjectorAPODll.h>
 #include <resource.h>
 
-#include <commonmacros.h>
 #include <devicetopology.h>
 #include <memory>
 #include <string>
@@ -32,7 +31,7 @@ _Analysis_mode_(_Analysis_code_type_user_driver_)
 // truly very different from all predefined types of effects.
 //
 
-// {DE5E2F27-3A3E-486D-B038-AC4401A774D7}
+// {2EC92F27-3A3E-486D-B038-AC4401A774D7}
 DEFINE_GUID(InjectEffectId,     0x2EC92F27, 0x3A3E, 0x486D, 0xB0, 0x38, 0xAC, 0x44, 0x01, 0xA7, 0x74, 0xD7);
 
 // Default audio mix ratio (50%)
@@ -65,6 +64,8 @@ public:    // constructor
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
+    ,   m_audioDeviceName()
+    ,   m_autoStopOnFileEnd(true)
     {
         m_pf32Coefficients = NULL;
     }
@@ -160,12 +161,12 @@ public:
     FLOAT32                                 m_mixRatio;
     UINT32                                  m_fileIndex;
     std::wstring                            m_audioFilePath;
+    std::wstring                            m_audioDeviceName;  // Name of audio device to use for capture
+    bool                                    m_autoStopOnFileEnd;  // Whether to stop mixing when file ends
 
 private:
     CCriticalSection                        m_EffectsLock;
     HANDLE                                  m_hEffectsChangedEvent;
-
-    HRESULT ProprietaryCommunicationWithDriver(APOInitSystemEffects2 *_pAPOSysFxInit2);
 
 };
 #pragma AVRT_VTABLES_END
@@ -190,6 +191,8 @@ public:    // constructor
     ,   m_fileIndex(0)
     ,   m_mixRatio(DEFAULT_MIX_RATIO)
     ,   m_audioFilePath(DEFAULT_AUDIO_FILE_PATH)
+    ,   m_audioDeviceName()
+    ,   m_autoStopOnFileEnd(true)
     {
     }
 
@@ -266,6 +269,8 @@ public:
     FLOAT32                                 m_mixRatio;
     UINT32                                  m_fileIndex;
     std::wstring                            m_audioFilePath;
+    std::wstring                            m_audioDeviceName;  // Name of audio device to use for capture
+    bool                                    m_autoStopOnFileEnd;  // Whether to stop mixing when file ends
 };
 #pragma AVRT_VTABLES_END
 

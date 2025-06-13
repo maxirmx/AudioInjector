@@ -244,7 +244,6 @@ static HRESULT AddApoPerCaptureDevice(void)
     hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
     if (FAILED(hr)) {
         pEnumerator->Release();
-        CoUninitialize();
         return hr;
     }
 
