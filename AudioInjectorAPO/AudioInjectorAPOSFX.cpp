@@ -642,7 +642,7 @@ STDMETHODIMP CAudioInjectorAPOSFX::GetEffectsList(_Outptr_result_buffer_maybenul
 HRESULT CAudioInjectorAPOSFX::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
 {
     HRESULT     hr = S_OK;
-
+    APO_LOG_TRACE_F("OnPropertyValueChanged %ls", pwstrDeviceId);
     UNREFERENCED_PARAMETER(pwstrDeviceId);
 
     if (!m_spAPOSystemEffectsProperties)

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+  <Target Name="PostBuildCopy" AfterTargets="Build">
+    <Copy SourceFiles="..\x64\$(Configuration)\AudioInjectorClient.dll" DestinationFolder="$(OutDir)" />
+  </Target>
+</Project>
